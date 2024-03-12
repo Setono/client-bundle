@@ -16,6 +16,12 @@
             <argument>%setono_client.cookie.name%</argument>
         </service>
 
+        <service id="setono_client.client_factory.cached"
+                 class="Setono\ClientBundle\ClientFactory\CachedClientFactory"
+                 decorates="setono_client.client_factory.default" decoration-priority="32">
+            <argument type="service" id="setono_client.client_factory.cached.inner"/>
+        </service>
+
         <!-- Controller related -->
         <service id="setono_client.controller.client_value_resolver"
                  class="Setono\ClientBundle\Controller\ClientValueResolver">

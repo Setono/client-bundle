@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Setono\ClientBundle\Entity;
 
-interface ClientInterface
+interface MetadataInterface
 {
     public function getId(): ?string;
 

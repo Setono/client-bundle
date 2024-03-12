@@ -6,7 +6,7 @@ namespace Setono\ClientBundle\MetadataProvider;
 
 use Doctrine\Persistence\ManagerRegistry;
 use Setono\Client\Metadata;
-use Setono\ClientBundle\Entity\Client;
+use Setono\ClientBundle\Entity\MetadataInterface;
 
 final class DoctrineOrmBasedMetadataProvider implements MetadataProviderInterface
 {
@@ -14,25 +14,25 @@ final class DoctrineOrmBasedMetadataProvider implements MetadataProviderInterfac
         private readonly MetadataProviderInterface $decorated,
         private readonly ManagerRegistry $managerRegistry,
         /**
-         * @var class-string<Client> $clientClass
+         * @var class-string<MetadataInterface> $metadataClass
          */
-        private readonly string $clientClass,
+        private readonly string $metadataClass,
     ) {
     }
 
     public function getMetadata(string $clientId): Metadata
     {
-        $manager = $this->managerRegistry->getManagerForClass($this->clientClass);
+        $manager = $this->managerRegistry->getManagerForClass($this->metadataClass);
         if (null === $manager) {
-            throw new \RuntimeException(sprintf('No manager found for class %s', $this->clientClass));
+            throw new \RuntimeException(sprintf('No manager found for class %s', $this->metadataClass));
         }
 
-        $client = $manager->find($this->clientClass, $clientId);
+        $metadata = $manager->find($this->metadataClass, $clientId);
 
-        if (null === $client) {
+        if (null === $metadata) {
             return $this->decorated->getMetadata($clientId);
         }
 
-        return new Metadata($client->getMetadata());
+        return new Metadata($metadata->getMetadata());
     }
 }

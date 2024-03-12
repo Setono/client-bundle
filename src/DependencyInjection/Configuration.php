@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Setono\ClientBundle\DependencyInjection;
 
-use Setono\ClientBundle\Entity\Client;
+use Setono\ClientBundle\Entity\Metadata;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
@@ -35,8 +35,8 @@ final class Configuration implements ConfigurationInterface
                     ->end()
                 ->end()
             ->end()
-            ->scalarNode('client_class')
-                ->defaultValue(Client::class)
+            ->scalarNode('metadata_class')
+                ->defaultValue(Metadata::class)
         ;
 
         return $treeBuilder;

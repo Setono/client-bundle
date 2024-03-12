@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Setono\ClientBundle\Entity;
 
-class Client implements ClientInterface
+class Metadata implements MetadataInterface
 {
     protected ?string $id = null;
 
