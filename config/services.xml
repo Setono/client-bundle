@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<container xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://symfony.com/schema/dic/services"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+    <services>
+        <!-- Client Factories -->
+        <service id="setono_client.client_factory.default"
+                 class="Setono\ClientBundle\ClientFactory\DefaultClientFactory"/>
+
+        <service id="setono_client.client_factory.cookie_based"
+                 class="Setono\ClientBundle\ClientFactory\CookieBasedClientFactory"
+                 decorates="setono_client.client_factory.default" decoration-priority="64">
+            <argument type="service" id="setono_client.client_factory.cookie_based.inner"/>
+            <argument type="service" id="request_stack"/>
+            <argument type="service" id="setono_client.metadata_provider.empty"/>
+            <argument>%setono_client.cookie.name%</argument>
+        </service>
+
+        <!-- Event subscribers -->
+        <service id="setono_client.event_subscriber.store_cookie"
+                 class="Setono\ClientBundle\EventSubscriber\StoreCookieSubscriber">
+            <argument type="service" id="setono_client.client_factory.default"/>
+            <argument>%setono_client.cookie.name%</argument>
+            <argument>%setono_client.cookie.expiration%</argument>
+
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <!-- Metadata Providers -->
+        <service id="setono_client.metadata_provider.default" alias="setono_client.metadata_provider.empty"/>
+
+        <service id="setono_client.metadata_provider.empty"
+                 class="Setono\ClientBundle\MetadataProvider\EmptyMetadataProvider"/>
+
+        <service id="setono_client.metadata_provider.doctrine_orm_based"
+                 class="Setono\ClientBundle\MetadataProvider\DoctrineOrmBasedMetadataProvider"
+                 decorates="setono_client.metadata_provider.default" decoration-priority="64">
+            <argument type="service" id="setono_client.metadata_provider.doctrine_orm_based.inner"/>
+            <argument type="service" id="doctrine"/>
+            <argument>%setono_client.client_class%</argument>
+        </service>
+    </services>
+</container>
