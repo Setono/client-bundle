@@ -17,14 +17,8 @@ final class SetonoClientBundle extends Bundle
 
     public function build(ContainerBuilder $container): void
     {
-        $container->addCompilerPass(
-            DoctrineOrmMappingsPass::createXmlMappingDriver(
-                [__DIR__ . '/../config/doctrine-mapping' => 'Setono\ClientBundle\Entity'],
-                [],
-                false,
-                [],
-                true,
-            ),
-        );
+        $container->addCompilerPass(DoctrineOrmMappingsPass::createXmlMappingDriver(
+            [__DIR__ . '/../config/doctrine-mapping' => 'Setono\ClientBundle\Entity'],
+        ));
     }
 }
