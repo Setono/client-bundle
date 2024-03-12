@@ -49,10 +49,19 @@
         <service id="setono_client.event_subscriber.store_metadata"
                  class="Setono\ClientBundle\EventSubscriber\StoreMetadataSubscriber">
             <argument type="service" id="setono_client.client_factory.default"/>
-            <argument type="service" id="doctrine"/>
-            <argument>%setono_client.metadata_class%</argument>
+            <argument type="service" id="setono_client.metadata_persister.default"/>
 
             <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <!-- Metadata Persisters -->
+        <service id="setono_client.metadata_persister.default"
+                 alias="setono_client.metadata_persister.doctrine_orm_based"/>
+
+        <service id="setono_client.metadata_persister.doctrine_orm_based"
+                 class="Setono\ClientBundle\MetadataPersister\DoctrineOrmBasedMetadataPersister">
+            <argument type="service" id="doctrine"/>
+            <argument>%setono_client.metadata_class%</argument>
         </service>
 
         <!-- Metadata Providers -->
@@ -66,7 +75,7 @@
                  decorates="setono_client.metadata_provider.default" decoration-priority="64">
             <argument type="service" id="setono_client.metadata_provider.doctrine_orm_based.inner"/>
             <argument type="service" id="doctrine"/>
-            <argument>%setono_client.client_class%</argument>
+            <argument>%setono_client.metadata_class%</argument>
         </service>
     </services>
 </container>
