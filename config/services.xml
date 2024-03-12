@@ -16,6 +16,14 @@
             <argument>%setono_client.cookie.name%</argument>
         </service>
 
+        <!-- Controller related -->
+        <service id="setono_client.controller.client_value_resolver"
+                 class="Setono\ClientBundle\Controller\ClientValueResolver">
+            <argument type="service" id="setono_client.client_factory.default"/>
+
+            <tag name="controller.argument_value_resolver"/>
+        </service>
+
         <!-- Event subscribers -->
         <service id="setono_client.event_subscriber.store_cookie"
                  class="Setono\ClientBundle\EventSubscriber\StoreCookieSubscriber">
