@@ -22,8 +22,7 @@
         "symfony/http-kernel": "^6.0 || ^7.0"
     },
     "require-dev": {
-        "matthiasnoback/symfony-dependency-injection-test": "^4.3.1 || ^5.0",
-        "nyholm/symfony-bundle-test": "^2.0",
+        "matthiasnoback/symfony-dependency-injection-test": "^4.3.1 || ^5.1",
         "phpunit/phpunit": "^9.6.10",
         "psalm/plugin-phpunit": "^0.18.4",
         "psalm/plugin-symfony": "^5.0.3",
