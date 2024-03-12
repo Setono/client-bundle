@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Setono\ClientBundle\ClientFactory;
 
 use Setono\Client\Client;
+use Setono\ClientBundle\Cookie\ClientIdCookie;
 use Setono\ClientBundle\MetadataProvider\MetadataProviderInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -30,6 +31,16 @@ final class CookieBasedClientFactory implements ClientFactoryInterface
             return $this->decorated->create();
         }
 
-        return new Client($clientId, $this->metadataProvider->getMetadata($clientId));
+        try {
+            $cookie = ClientIdCookie::fromString($clientId);
+        } catch (\InvalidArgumentException) {
+            return $this->decorated->create();
+        }
+
+        $metadata = $this->metadataProvider->getMetadata($cookie->clientId);
+        $metadata->set('created_at', $cookie->createdAt);
+        $metadata->set('updated_at', $cookie->updatedAt);
+
+        return new Client($clientId, $metadata);
     }
 }

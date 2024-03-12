@@ -19,6 +19,7 @@ final class DoctrineOrmBasedMetadataPersister implements MetadataPersisterInterf
     ) {
     }
 
+    // todo we need a way to NOT persist if the metadata wasn't fetched from the db in the first place and is empty
     public function persist(Client $client): void
     {
         $manager = $this->managerRegistry->getManagerForClass($this->metadataClass);

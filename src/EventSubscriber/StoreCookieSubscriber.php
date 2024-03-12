@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Setono\ClientBundle\EventSubscriber;
 
 use Setono\ClientBundle\ClientFactory\ClientFactoryInterface;
+use Setono\ClientBundle\Cookie\ClientIdCookie;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
+use Webmozart\Assert\Assert;
 
 final class StoreCookieSubscriber implements EventSubscriberInterface
 {
@@ -29,8 +30,19 @@ final class StoreCookieSubscriber implements EventSubscriberInterface
     public function store(ResponseEvent $event): void
     {
         $client = $this->clientFactory->create();
+
+        $createdAt = $client->metadata['created_at'] ?? null;
+        Assert::nullOrInteger($createdAt);
+
+        $updated = $client->metadata['updated_at'] ?? null;
+        Assert::nullOrInteger($updated);
+
+        unset($client->metadata['created_at'], $client->metadata['updated_at']);
+
+        $cookie = new ClientIdCookie($client->id, $createdAt, $updated);
+
         $event->getResponse()->headers->setCookie(
-            Cookie::create($this->cookieName, $client->id, $this->cookieExpiration),
+            $cookie->asHttpCookie($this->cookieName, $this->cookieExpiration),
         );
     }
 }
