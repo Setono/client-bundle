@@ -24,6 +24,12 @@
             <tag name="controller.argument_value_resolver"/>
         </service>
 
+        <!-- Event listeners -->
+        <service id="setono_client.event_listener_doctrine.convert_to_entity"
+                 class="Setono\ClientBundle\EventListener\Doctrine\ConvertToEntityListener">
+            <tag name="doctrine.event_listener" event="loadClassMetadata"/>
+        </service>
+
         <!-- Event subscribers -->
         <service id="setono_client.event_subscriber.store_cookie"
                  class="Setono\ClientBundle\EventSubscriber\StoreCookieSubscriber">
