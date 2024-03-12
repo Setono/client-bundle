@@ -4,7 +4,7 @@
                   xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
                   http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
     <mapped-superclass name="Setono\ClientBundle\Entity\Client" table="setono_client__client">
-        <id name="clientId" type="string" column="client_id"/>
+        <id name="id" type="string" column="client_id"/>
         <field name="metadata" type="json"/>
     </mapped-superclass>
 </doctrine-mapping>

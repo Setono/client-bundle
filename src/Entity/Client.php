@@ -6,10 +6,10 @@ namespace Setono\ClientBundle\Entity;
 
 class Client implements ClientInterface
 {
-    private ?string $id = null;
+    protected ?string $id = null;
 
     /** @var array<string, mixed> */
-    private array $metadata = [];
+    protected array $metadata = [];
 
     public function getId(): ?string
     {
