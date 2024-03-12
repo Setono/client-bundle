@@ -8,8 +8,8 @@ class Metadata implements MetadataInterface
 {
     protected ?string $clientId = null;
 
-    /** @var array<string, mixed> */
-    protected array $metadata = [];
+    /** @var array<string, mixed>|null */
+    protected ?array $metadata = [];
 
     public function getClientId(): ?string
     {
@@ -26,11 +26,11 @@ class Metadata implements MetadataInterface
      */
     public function getMetadata(): array
     {
-        return $this->metadata;
+        return $this->metadata ?? [];
     }
 
     public function setMetadata(array $metadata): void
     {
-        $this->metadata = $metadata;
+        $this->metadata = [] === $metadata ? null : $metadata;
     }
 }
