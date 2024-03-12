@@ -27,6 +27,7 @@ final class DoctrineOrmBasedMetadataProvider implements MetadataProviderInterfac
             throw new \RuntimeException(sprintf('No manager found for class %s', $this->metadataClass));
         }
 
+        /** @var MetadataInterface|null $metadata */
         $metadata = $manager->find($this->metadataClass, $clientId);
 
         if (null === $metadata) {

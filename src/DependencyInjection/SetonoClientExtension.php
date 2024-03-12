@@ -31,7 +31,7 @@ final class SetonoClientExtension extends Extension
 
         $container->setParameter('setono_client.cookie.name', $config['cookie']['name']);
         $container->setParameter('setono_client.cookie.expiration', $config['cookie']['expiration']);
-        $container->setParameter('setono_client.client_class', $config['metadata_class']);
+        $container->setParameter('setono_client.metadata_class', $config['metadata_class']);
 
         $loader->load('services.xml');
     }

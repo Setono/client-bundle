@@ -12,15 +12,15 @@ use Symfony\Component\HttpKernel\Event\FinishRequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 // todo should be abstracted to a 'metadata persister' or something like that
-final class StoreClientSubscriber implements EventSubscriberInterface
+final class StoreMetadataSubscriber implements EventSubscriberInterface
 {
     public function __construct(
         private readonly ClientFactoryInterface $clientFactory,
         private readonly ManagerRegistry $managerRegistry,
         /**
-         * @var class-string<MetadataInterface> $clientClass
+         * @var class-string<MetadataInterface> $metadataClass
          */
-        private readonly string $clientClass,
+        private readonly string $metadataClass,
     ) {
     }
 
@@ -38,15 +38,15 @@ final class StoreClientSubscriber implements EventSubscriberInterface
         }
 
         $client = $this->clientFactory->create();
-        $manager = $this->managerRegistry->getManagerForClass($this->clientClass);
+        $manager = $this->managerRegistry->getManagerForClass($this->metadataClass);
         if (null === $manager) {
-            throw new \RuntimeException(sprintf('No manager found for class %s', $this->clientClass));
+            throw new \RuntimeException(sprintf('No manager found for class %s', $this->metadataClass));
         }
 
-        $entity = $manager->find($this->clientClass, $client->id);
+        $entity = $manager->find($this->metadataClass, $client->id);
         if (null === $entity) {
             /** @var MetadataInterface $entity */
-            $entity = new $this->clientClass();
+            $entity = new $this->metadataClass();
             $entity->setClientId($client->id);
 
             $manager->persist($entity);

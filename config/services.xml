@@ -46,6 +46,15 @@
             <tag name="kernel.event_subscriber"/>
         </service>
 
+        <service id="setono_client.event_subscriber.store_metadata"
+                 class="Setono\ClientBundle\EventSubscriber\StoreMetadataSubscriber">
+            <argument type="service" id="setono_client.client_factory.default"/>
+            <argument type="service" id="doctrine"/>
+            <argument>%setono_client.metadata_class%</argument>
+
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
         <!-- Metadata Providers -->
         <service id="setono_client.metadata_provider.default" alias="setono_client.metadata_provider.empty"/>
 
