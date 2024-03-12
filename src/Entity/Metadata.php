@@ -6,19 +6,19 @@ namespace Setono\ClientBundle\Entity;
 
 class Metadata implements MetadataInterface
 {
-    protected ?string $id = null;
+    protected ?string $clientId = null;
 
     /** @var array<string, mixed> */
     protected array $metadata = [];
 
-    public function getId(): ?string
+    public function getClientId(): ?string
     {
-        return $this->id;
+        return $this->clientId;
     }
 
-    public function setId(?string $id): void
+    public function setClientId(?string $clientId): void
     {
-        $this->id = $id;
+        $this->clientId = $clientId;
     }
 
     /**

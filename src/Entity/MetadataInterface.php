@@ -6,9 +6,9 @@ namespace Setono\ClientBundle\Entity;
 
 interface MetadataInterface
 {
-    public function getId(): ?string;
+    public function getClientId(): ?string;
 
-    public function setId(string $id): void;
+    public function setClientId(string $clientId): void;
 
     /**
      * @return array<string, mixed>

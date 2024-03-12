@@ -47,7 +47,7 @@ final class StoreClientSubscriber implements EventSubscriberInterface
         if (null === $entity) {
             /** @var MetadataInterface $entity */
             $entity = new $this->clientClass();
-            $entity->setId($client->id);
+            $entity->setClientId($client->id);
 
             $manager->persist($entity);
         }
