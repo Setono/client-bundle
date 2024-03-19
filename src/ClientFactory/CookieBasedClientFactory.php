@@ -19,7 +19,7 @@ final class CookieBasedClientFactory implements ClientFactoryInterface
 
     public function create(): Client
     {
-        $cookie = $this->clientCookieProvider->getClientCookie();
+        $cookie = $this->clientCookieProvider->getCookie();
         if (null === $cookie) {
             return $this->decorated->create();
         }

@@ -19,7 +19,7 @@ final class CookieProvider implements CookieProviderInterface
     ) {
     }
 
-    public function getClientCookie(Request $request = null): ?Cookie
+    public function getCookie(Request $request = null): ?Cookie
     {
         $request = $request ?? $this->requestStack->getMainRequest();
         if (null === $request) {
@@ -29,13 +29,13 @@ final class CookieProvider implements CookieProviderInterface
         $hash = spl_object_hash($request);
 
         if (!array_key_exists($hash, $this->cache)) {
-            $this->cache[$hash] = $this->getCookie($request);
+            $this->cache[$hash] = $this->getFromRequest($request);
         }
 
         return $this->cache[$hash];
     }
 
-    private function getCookie(Request $request): ?Cookie
+    private function getFromRequest(Request $request): ?Cookie
     {
         $cookieValue = $request->cookies->get($this->cookieName);
         if (!is_string($cookieValue) || '' === $cookieValue) {

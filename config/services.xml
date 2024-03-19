@@ -46,6 +46,7 @@
         <service id="setono_client.event_subscriber.store_cookie"
                  class="Setono\ClientBundle\EventSubscriber\StoreCookieSubscriber">
             <argument type="service" id="setono_client.client_factory.default"/>
+            <argument type="service" id="setono_client.cookie_provider.default"/>
             <argument>%setono_client.cookie.name%</argument>
             <argument>%setono_client.cookie.expiration%</argument>
 

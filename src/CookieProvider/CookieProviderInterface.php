@@ -12,5 +12,5 @@ interface CookieProviderInterface
     /**
      * @param Request|null $request if null, the main request will be used
      */
-    public function getClientCookie(Request $request = null): ?Cookie;
+    public function getCookie(Request $request = null): ?Cookie;
 }
