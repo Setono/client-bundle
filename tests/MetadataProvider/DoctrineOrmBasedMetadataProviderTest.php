@@ -9,7 +9,7 @@ use Doctrine\Persistence\ObjectManager;
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Setono\Client\Metadata;
-use Setono\ClientBundle\Client\LazyMetadata;
+use Setono\ClientBundle\Client\LazyChangeAwareMetadata;
 use Setono\ClientBundle\Entity\Metadata as MetadataEntity;
 use Setono\ClientBundle\MetadataProvider\DoctrineOrmBasedMetadataProvider;
 use Setono\ClientBundle\MetadataProvider\MetadataProviderInterface;
@@ -38,7 +38,7 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
 
         $metadata = $provider->getMetadata('some-client-id');
 
-        self::assertInstanceOf(LazyMetadata::class, $metadata);
+        self::assertInstanceOf(LazyChangeAwareMetadata::class, $metadata);
     }
 
     /**
@@ -63,7 +63,7 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
         $metadata = $provider->getMetadata('some-client-id');
         $metadata->set('some-key', 'some-value');
 
-        self::assertInstanceOf(LazyMetadata::class, $metadata);
+        self::assertInstanceOf(LazyChangeAwareMetadata::class, $metadata);
         self::assertSame('some-value', $metadata->get('some-key'));
     }
 }
