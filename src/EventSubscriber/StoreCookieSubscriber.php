@@ -42,7 +42,8 @@ final class StoreCookieSubscriber implements EventSubscriberInterface
         }
 
         $event->getResponse()->headers->setCookie(
-            HttpCookie::create($this->cookieName, $cookie->toString(), $this->cookieExpiration),
+            HttpCookie::create($this->cookieName, $cookie->withLastSeenAt(time())->toString(), $this->cookieExpiration)
+                ->withHttpOnly(false), // this allows javascript to read the cookie
         );
     }
 }
