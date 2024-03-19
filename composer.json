@@ -23,6 +23,7 @@
     },
     "require-dev": {
         "matthiasnoback/symfony-dependency-injection-test": "^4.3.1 || ^5.1",
+        "phpspec/prophecy-phpunit": "^2.2",
         "phpunit/phpunit": "^9.6.10",
         "psalm/plugin-phpunit": "^0.18.4",
         "psalm/plugin-symfony": "^5.0.3",

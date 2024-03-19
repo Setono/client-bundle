@@ -13,24 +13,24 @@ final class DoctrineOrmBasedMetadataPersister implements MetadataPersisterInterf
     public function __construct(
         private readonly ManagerRegistry $managerRegistry,
         /**
-         * @var class-string<MetadataInterface> $metadataClass
+         * @var class-string<MetadataInterface> $metadataEntityClass
          */
-        private readonly string $metadataClass,
+        private readonly string $metadataEntityClass,
     ) {
     }
 
     // todo we need a way to NOT persist if the metadata wasn't fetched from the db in the first place and is empty
     public function persist(Client $client): void
     {
-        $manager = $this->managerRegistry->getManagerForClass($this->metadataClass);
+        $manager = $this->managerRegistry->getManagerForClass($this->metadataEntityClass);
         if (null === $manager) {
-            throw new \RuntimeException(sprintf('No manager found for class %s', $this->metadataClass));
+            throw new \RuntimeException(sprintf('No manager found for class %s', $this->metadataEntityClass));
         }
 
-        $entity = $manager->find($this->metadataClass, $client->id);
+        $entity = $manager->find($this->metadataEntityClass, $client->id);
         if (null === $entity) {
             /** @var MetadataInterface $entity */
-            $entity = new $this->metadataClass();
+            $entity = new $this->metadataEntityClass();
             $entity->setClientId($client->id);
 
             $manager->persist($entity);

@@ -11,15 +11,21 @@
                  class="Setono\ClientBundle\ClientFactory\CookieBasedClientFactory"
                  decorates="setono_client.client_factory.default" decoration-priority="64">
             <argument type="service" id="setono_client.client_factory.cookie_based.inner"/>
-            <argument type="service" id="request_stack"/>
             <argument type="service" id="setono_client.metadata_provider.empty"/>
-            <argument>%setono_client.cookie.name%</argument>
+            <argument type="service" id="setono_client.cookie_provider.default"/>
         </service>
 
         <service id="setono_client.client_factory.cached"
                  class="Setono\ClientBundle\ClientFactory\CachedClientFactory"
                  decorates="setono_client.client_factory.default" decoration-priority="32">
             <argument type="service" id="setono_client.client_factory.cached.inner"/>
+        </service>
+
+        <!-- Cookie Provider -->
+        <service id="setono_client.cookie_provider.default"
+                 class="Setono\ClientBundle\CookieProvider\CookieProvider">
+            <argument type="service" id="request_stack"/>
+            <argument>%setono_client.cookie.name%</argument>
         </service>
 
         <!-- Controller related -->

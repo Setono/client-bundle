@@ -15,22 +15,22 @@ final class DoctrineOrmBasedMetadataProvider implements MetadataProviderInterfac
         private readonly MetadataProviderInterface $decorated,
         private readonly ManagerRegistry $managerRegistry,
         /**
-         * @var class-string<MetadataInterface> $metadataClass
+         * @var class-string<MetadataInterface> $metadataEntityClass
          */
-        private readonly string $metadataClass,
+        private readonly string $metadataEntityClass,
     ) {
     }
 
     public function getMetadata(string $clientId): Metadata
     {
-        $manager = $this->managerRegistry->getManagerForClass($this->metadataClass);
+        $manager = $this->managerRegistry->getManagerForClass($this->metadataEntityClass);
         if (null === $manager) {
-            throw new \RuntimeException(sprintf('No manager found for class %s', $this->metadataClass));
+            throw new \RuntimeException(sprintf('No manager found for class %s', $this->metadataEntityClass));
         }
 
         return LazyMetadata::createLazyGhost(function (Metadata $instance) use ($clientId, $manager): void {
             /** @var MetadataInterface|null $entity */
-            $entity = $manager->find($this->metadataClass, $clientId);
+            $entity = $manager->find($this->metadataEntityClass, $clientId);
 
             if (null === $entity) {
                 $metadata = $this->decorated->getMetadata($clientId)->toArray();
