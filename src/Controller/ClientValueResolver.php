@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace Setono\ClientBundle\Controller;
 
 use Setono\Client\Client;
-use Setono\ClientBundle\ClientFactory\ClientFactoryInterface;
+use Setono\ClientBundle\Context\ClientContextInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Controller\ValueResolverInterface;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
 
 final class ClientValueResolver implements ValueResolverInterface
 {
-    public function __construct(private readonly ClientFactoryInterface $clientFactory)
+    public function __construct(private readonly ClientContextInterface $clientContext)
     {
     }
 
@@ -23,6 +23,6 @@ final class ClientValueResolver implements ValueResolverInterface
             return [];
         }
 
-        return [$this->clientFactory->create()];
+        return [$this->clientContext->getClient()];
     }
 }

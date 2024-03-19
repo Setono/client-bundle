@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Setono\ClientBundle\ClientFactory;
+namespace Setono\ClientBundle\Context;
 
 use Setono\Client\Client;
 use Setono\ClientBundle\CookieProvider\CookieProviderInterface;
 use Setono\ClientBundle\MetadataProvider\MetadataProviderInterface;
 
-final class CookieBasedClientFactory implements ClientFactoryInterface
+final class CookieBasedClientContext implements ClientContextInterface
 {
     public function __construct(
-        private readonly ClientFactoryInterface $decorated,
+        private readonly ClientContextInterface $decorated,
         private readonly MetadataProviderInterface $metadataProvider,
         private readonly CookieProviderInterface $clientCookieProvider,
     ) {
     }
 
-    public function create(): Client
+    public function getClient(): Client
     {
         $cookie = $this->clientCookieProvider->getCookie();
         if (null === $cookie) {
-            return $this->decorated->create();
+            return $this->decorated->getClient();
         }
 
         $metadata = $this->metadataProvider->getMetadata($cookie->clientId);

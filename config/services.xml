@@ -3,22 +3,22 @@
 <container xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://symfony.com/schema/dic/services"
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
     <services>
-        <!-- Client Factories -->
-        <service id="setono_client.client_factory.default"
-                 class="Setono\ClientBundle\ClientFactory\DefaultClientFactory"/>
+        <!-- Client Contexts -->
+        <service id="setono_client.client_context.default"
+                 class="Setono\ClientBundle\Context\DefaultClientContext"/>
 
-        <service id="setono_client.client_factory.cookie_based"
-                 class="Setono\ClientBundle\ClientFactory\CookieBasedClientFactory"
-                 decorates="setono_client.client_factory.default" decoration-priority="64">
-            <argument type="service" id="setono_client.client_factory.cookie_based.inner"/>
+        <service id="setono_client.client_context.cookie_based"
+                 class="Setono\ClientBundle\Context\CookieBasedClientContext"
+                 decorates="setono_client.client_context.default" decoration-priority="64">
+            <argument type="service" id="setono_client.client_context.cookie_based.inner"/>
             <argument type="service" id="setono_client.metadata_provider.empty"/>
             <argument type="service" id="setono_client.cookie_provider.default"/>
         </service>
 
-        <service id="setono_client.client_factory.cached"
-                 class="Setono\ClientBundle\ClientFactory\CachedClientFactory"
-                 decorates="setono_client.client_factory.default" decoration-priority="32">
-            <argument type="service" id="setono_client.client_factory.cached.inner"/>
+        <service id="setono_client.client_context.cached"
+                 class="Setono\ClientBundle\Context\CachedClientContext"
+                 decorates="setono_client.client_context.default" decoration-priority="32">
+            <argument type="service" id="setono_client.client_context.cached.inner"/>
         </service>
 
         <!-- Cookie Provider -->
@@ -31,7 +31,7 @@
         <!-- Controller related -->
         <service id="setono_client.controller.client_value_resolver"
                  class="Setono\ClientBundle\Controller\ClientValueResolver">
-            <argument type="service" id="setono_client.client_factory.default"/>
+            <argument type="service" id="setono_client.client_context.default"/>
 
             <tag name="controller.argument_value_resolver"/>
         </service>
@@ -45,7 +45,7 @@
         <!-- Event subscribers -->
         <service id="setono_client.event_subscriber.store_cookie"
                  class="Setono\ClientBundle\EventSubscriber\StoreCookieSubscriber">
-            <argument type="service" id="setono_client.client_factory.default"/>
+            <argument type="service" id="setono_client.client_context.default"/>
             <argument type="service" id="setono_client.cookie_provider.default"/>
             <argument>%setono_client.cookie.name%</argument>
             <argument>%setono_client.cookie.expiration%</argument>
@@ -55,7 +55,7 @@
 
         <service id="setono_client.event_subscriber.store_metadata"
                  class="Setono\ClientBundle\EventSubscriber\StoreMetadataSubscriber">
-            <argument type="service" id="setono_client.client_factory.default"/>
+            <argument type="service" id="setono_client.client_context.default"/>
             <argument type="service" id="setono_client.metadata_persister.default"/>
 
             <tag name="kernel.event_subscriber"/>
