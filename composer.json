@@ -27,7 +27,7 @@
         "phpspec/prophecy-phpunit": "^2.2",
         "phpunit/phpunit": "^9.6.10",
         "psalm/plugin-phpunit": "^0.18.4",
-        "psalm/plugin-symfony": "^5.0.3",
+        "psalm/plugin-symfony": "^5.1",
         "setono/code-quality-pack": "^2.7"
     },
     "prefer-stable": true,
