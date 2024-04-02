@@ -39,6 +39,7 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
         $metadata = $provider->getMetadata('some-client-id');
 
         self::assertInstanceOf(LazyChangeAwareMetadata::class, $metadata);
+        self::assertFalse($metadata->isLazyObjectInitialized());
     }
 
     /**
@@ -64,6 +65,8 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
         $metadata->set('some-key', 'some-value');
 
         self::assertInstanceOf(LazyChangeAwareMetadata::class, $metadata);
+        self::assertTrue($metadata->isLazyObjectInitialized());
+        self::assertTrue($metadata->isDirty());
         self::assertSame('some-value', $metadata->get('some-key'));
     }
 }

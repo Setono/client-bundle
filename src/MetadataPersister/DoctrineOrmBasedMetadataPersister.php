@@ -28,6 +28,9 @@ final class DoctrineOrmBasedMetadataPersister implements MetadataPersisterInterf
         }
 
         $metadata = $client->metadata;
+
+        // NOTICE it's important to call $metadata->isLazyObjectInitialized()
+        // before $metadata->isDirty() because the latter will initialize the object
         if ($metadata instanceof LazyChangeAwareMetadata && (!$metadata->isLazyObjectInitialized() || !$metadata->isDirty())) {
             return;
         }
