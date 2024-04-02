@@ -16,7 +16,10 @@ final class ClientValueResolver implements ValueResolverInterface
     {
     }
 
-    public function resolve(Request $request, ArgumentMetadata $argument): iterable
+    /**
+     * @return list<Client>
+     */
+    public function resolve(Request $request, ArgumentMetadata $argument): array
     {
         $argumentType = $argument->getType();
         if (!is_string($argumentType) || !is_a($argumentType, Client::class, true)) {
