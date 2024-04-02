@@ -24,8 +24,6 @@ final class CookieBasedClientContext implements ClientContextInterface
             return $this->decorated->getClient();
         }
 
-        $metadata = $this->metadataProvider->getMetadata($cookie->clientId);
-
-        return new Client($cookie->clientId, $metadata);
+        return new Client($cookie->clientId, $this->metadataProvider->getMetadata($cookie->clientId));
     }
 }
