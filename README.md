@@ -54,7 +54,7 @@ use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Setono\ClientBundle\Context\ClientContextInterface;
 
-final class YourController implements EventSubscriberInterface
+final class YourEventSubscriber implements EventSubscriberInterface
 {
     public function __construct(private readonly ClientContextInterface $clientContext)
     {}
