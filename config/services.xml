@@ -4,6 +4,8 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
     <services>
         <!-- Client Contexts -->
+        <service id="Setono\ClientBundle\Context\ClientContextInterface" alias="setono_client.client_context.default"/>
+
         <service id="setono_client.client_context.default"
                  class="Setono\ClientBundle\Context\DefaultClientContext"/>
 
@@ -22,10 +24,20 @@
         </service>
 
         <!-- Cookie Provider -->
+        <service id="Setono\ClientBundle\CookieProvider\CookieProviderInterface"
+                 alias="setono_client.cookie_provider.default"/>
+
         <service id="setono_client.cookie_provider.default"
-                 class="Setono\ClientBundle\CookieProvider\CookieProvider">
+                 class="Setono\ClientBundle\CookieProvider\RequestBasedCookieProvider">
             <argument type="service" id="request_stack"/>
             <argument>%setono_client.cookie.name%</argument>
+        </service>
+
+        <service id="setono_client.cookie_provider.cached"
+                 class="Setono\ClientBundle\CookieProvider\CachedCookieProvider"
+                 decorates="setono_client.cookie_provider.default" decoration-priority="32">
+            <argument type="service" id="setono_client.cookie_provider.cached.inner"/>
+            <argument type="service" id="request_stack"/>
         </service>
 
         <!-- Controller related -->

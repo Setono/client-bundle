@@ -8,11 +8,8 @@ use Setono\Client\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
-final class CookieProvider implements CookieProviderInterface
+final class RequestBasedCookieProvider implements CookieProviderInterface
 {
-    /** @var array<string, Cookie|null> */
-    private array $cache = [];
-
     public function __construct(
         private readonly RequestStack $requestStack,
         private readonly string $cookieName,
@@ -21,23 +18,7 @@ final class CookieProvider implements CookieProviderInterface
 
     public function getCookie(Request $request = null): ?Cookie
     {
-        $request = $request ?? $this->requestStack->getMainRequest();
-        if (null === $request) {
-            return null;
-        }
-
-        $hash = spl_object_hash($request);
-
-        if (!array_key_exists($hash, $this->cache)) {
-            $this->cache[$hash] = $this->getFromRequest($request);
-        }
-
-        return $this->cache[$hash];
-    }
-
-    private function getFromRequest(Request $request): ?Cookie
-    {
-        $cookieValue = $request->cookies->get($this->cookieName);
+        $cookieValue = ($request ?? $this->requestStack->getMainRequest())?->cookies->get($this->cookieName);
         if (!is_string($cookieValue) || '' === $cookieValue) {
             return null;
         }
