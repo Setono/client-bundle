@@ -104,6 +104,23 @@ final class YourService
 }
 ```
 
+## Configuration
+
+Here's the configuration you are able to do:
+
+```yaml
+setono_client:
+    cookie:
+        # The name of the cookie that holds the client id. NOTICE that if you change this value, all clients with a cookie with the old name will be considered new clients
+        name: setono_client_id
+
+        # The expiration of the cookie. This is a string that can be parsed by strtotime
+        expiration: '+365 days'
+    
+    # If you want to use a custom metadata class, you can specify it here    
+    metadata_class: Setono\ClientBundle\Entity\Metadata
+```
+
 [ico-version]: https://poser.pugx.org/setono/client-bundle/v/stable
 [ico-license]: https://poser.pugx.org/setono/client-bundle/license
 [ico-github-actions]: https://github.com/Setono/client-bundle/workflows/build/badge.svg
