@@ -6,6 +6,7 @@ namespace Setono\ClientBundle\MetadataPersister;
 
 use Doctrine\Persistence\ManagerRegistry;
 use Setono\Client\Client;
+use Setono\ClientBundle\Client\ChangeAwareMetadata;
 use Setono\ClientBundle\Client\LazyChangeAwareMetadata;
 use Setono\ClientBundle\Entity\MetadataInterface as MetadataEntityInterface;
 
@@ -29,9 +30,11 @@ final class DoctrineOrmBasedMetadataPersister implements MetadataPersisterInterf
 
         $metadata = $client->metadata;
 
-        // NOTICE it's important to call $metadata->isLazyObjectInitialized()
-        // before $metadata->isDirty() because the latter will initialize the object
-        if ($metadata instanceof LazyChangeAwareMetadata && (!$metadata->isLazyObjectInitialized() || !$metadata->isDirty())) {
+        if ($metadata instanceof LazyChangeAwareMetadata && !$metadata->isLazyObjectInitialized()) {
+            return;
+        }
+
+        if ($metadata instanceof ChangeAwareMetadata && !$metadata->isDirty()) {
             return;
         }
 
