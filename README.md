@@ -45,7 +45,42 @@ final class YourController extends AbstractController
 }
 ```
 
+### Set some metadata in an event subscriber
+
+```php
+use Setono\Client\Client;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpKernel\KernelEvents;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
+use Setono\ClientBundle\Context\ClientContextInterface;
+
+final class YourController implements EventSubscriberInterface
+{
+    public function __construct(private readonly ClientContextInterface $clientContext)
+    {}
+    
+    public static function getSubscribedEvents(): array
+    {
+        return [
+            KernelEvents::REQUEST => 'setMetadata',
+        ];
+    }
+    
+    public function setMetadata(RequestEvent $event): void
+    {
+        if (!$event->isMainRequest() || !$event->getRequest()->query->has('gclid')) {
+            return;
+        }
+        
+        $this->clientContext->getClient()->metadata->set('google_click_id', $event->getRequest()->query->get('gclid'));
+    }
+}
+```
+
 ### Access the cookie
+
+The client id is saved in a cookie named `setono_client_id` (by default). The cookie also holds other information, like
+the first and last time the client was seen. You can access the cookie like this:
 
 ```php
 use Setono\ClientBundle\CookieProvider\CookieProviderInterface;
