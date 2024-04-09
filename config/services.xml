@@ -13,7 +13,7 @@
                  class="Setono\ClientBundle\Context\CookieBasedClientContext"
                  decorates="setono_client.client_context.default" decoration-priority="64">
             <argument type="service" id="setono_client.client_context.cookie_based.inner"/>
-            <argument type="service" id="setono_client.metadata_provider.empty"/>
+            <argument type="service" id="setono_client.metadata_provider.default"/>
             <argument type="service" id="setono_client.cookie_provider.default"/>
         </service>
 
