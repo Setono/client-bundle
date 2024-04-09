@@ -1,15 +1,15 @@
-# Integrate the client library into your Symfony application
+# Track users between visits in Symfony 
 
 [![Latest Version][ico-version]][link-packagist]
 [![Software License][ico-license]](LICENSE)
 [![Build Status][ico-github-actions]][link-github-actions]
 [![Code Coverage][ico-code-coverage]][link-code-coverage]
 
-Integrates the client library into your Symfony application.
+This bundle allows you to track your users between visits and add custom metadata to each user.
 
 Out of the box, the bundle will store a cookie named `setono_client_id` which contains the client id, a created timestamp and a last seen timestamp.
 
-It will also create a new table with metadata for each client id. The metadata functionality is lazy loaded, so if you don't use it you won't have to worry about it.
+It will also create a new table with metadata for each client id. The metadata functionality is lazy loaded, so if you don't use it, it will not query the database.
 
 ## Installation
 
