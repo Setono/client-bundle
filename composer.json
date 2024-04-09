@@ -30,9 +30,6 @@
         "psalm/plugin-symfony": "^5.1",
         "setono/code-quality-pack": "^2.7"
     },
-    "conflict": {
-        "setono/client-id-bundle": "*"
-    },
     "prefer-stable": true,
     "autoload": {
         "psr-4": {
