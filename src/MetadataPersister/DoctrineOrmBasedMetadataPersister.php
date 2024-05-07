@@ -9,24 +9,25 @@ use Setono\Client\Client;
 use Setono\ClientBundle\Client\ChangeAwareMetadata;
 use Setono\ClientBundle\Client\LazyChangeAwareMetadata;
 use Setono\ClientBundle\Entity\MetadataInterface as MetadataEntityInterface;
+use Setono\Doctrine\ORMTrait;
 
 final class DoctrineOrmBasedMetadataPersister implements MetadataPersisterInterface
 {
+    use ORMTrait;
+
     public function __construct(
-        private readonly ManagerRegistry $managerRegistry,
+        ManagerRegistry $managerRegistry,
         /**
          * @var class-string<MetadataEntityInterface> $metadataEntityClass
          */
         private readonly string $metadataEntityClass,
     ) {
+        $this->managerRegistry = $managerRegistry;
     }
 
     public function persist(Client $client): void
     {
-        $manager = $this->managerRegistry->getManagerForClass($this->metadataEntityClass);
-        if (null === $manager) {
-            throw new \RuntimeException(sprintf('No manager found for class %s', $this->metadataEntityClass));
-        }
+        $manager = $this->getManager($this->metadataEntityClass);
 
         $metadata = $client->metadata;
 

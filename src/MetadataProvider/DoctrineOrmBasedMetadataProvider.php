@@ -8,25 +8,26 @@ use Doctrine\Persistence\ManagerRegistry;
 use Setono\Client\Metadata;
 use Setono\ClientBundle\Client\LazyChangeAwareMetadata;
 use Setono\ClientBundle\Entity\MetadataInterface;
+use Setono\Doctrine\ORMTrait;
 
 final class DoctrineOrmBasedMetadataProvider implements MetadataProviderInterface
 {
+    use ORMTrait;
+
     public function __construct(
         private readonly MetadataProviderInterface $decorated,
-        private readonly ManagerRegistry $managerRegistry,
+        ManagerRegistry $managerRegistry,
         /**
          * @var class-string<MetadataInterface> $metadataEntityClass
          */
         private readonly string $metadataEntityClass,
     ) {
+        $this->managerRegistry = $managerRegistry;
     }
 
     public function getMetadata(string $clientId): Metadata
     {
-        $manager = $this->managerRegistry->getManagerForClass($this->metadataEntityClass);
-        if (null === $manager) {
-            throw new \RuntimeException(sprintf('No manager found for class %s', $this->metadataEntityClass));
-        }
+        $manager = $this->getManager($this->metadataEntityClass);
 
         return LazyChangeAwareMetadata::createLazyGhost(function (Metadata $instance) use ($clientId, $manager): void {
             /** @var MetadataInterface|null $entity */

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Setono\ClientBundle\Tests\MetadataProvider;
 
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
-use Doctrine\Persistence\ObjectManager;
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Setono\Client\Metadata;
@@ -23,7 +23,7 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
      */
     public function it_returns_lazy_metadata(): void
     {
-        $manager = $this->prophesize(ObjectManager::class);
+        $manager = $this->prophesize(EntityManagerInterface::class);
 
         $managerRegistry = $this->prophesize(ManagerRegistry::class);
         $managerRegistry->getManagerForClass(MetadataEntity::class)->willReturn($manager);
@@ -47,7 +47,7 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
      */
     public function it_initializes_metadata_when_accessed(): void
     {
-        $manager = $this->prophesize(ObjectManager::class);
+        $manager = $this->prophesize(EntityManagerInterface::class);
 
         $managerRegistry = $this->prophesize(ManagerRegistry::class);
         $managerRegistry->getManagerForClass(MetadataEntity::class)->willReturn($manager);
