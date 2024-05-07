@@ -17,9 +17,8 @@ final class DoctrineOrmBasedMetadataPersister implements MetadataPersisterInterf
 
     public function __construct(
         ManagerRegistry $managerRegistry,
-        /**
-         * @var class-string<MetadataEntityInterface> $metadataEntityClass
-         */
+
+        /** @var class-string<MetadataEntityInterface> $metadataEntityClass */
         private readonly string $metadataEntityClass,
     ) {
         $this->managerRegistry = $managerRegistry;
