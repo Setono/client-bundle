@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Setono\ClientBundle\EventSubscriber;
 
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Setono\Client\Cookie;
 use Setono\ClientBundle\Context\ClientContextInterface;
 use Setono\ClientBundle\CookieProvider\CookieProviderInterface;
+use Setono\ClientBundle\Event\PreStoreCookieEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Cookie as HttpCookie;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
@@ -17,6 +19,7 @@ final class StoreCookieSubscriber implements EventSubscriberInterface
     public function __construct(
         private readonly ClientContextInterface $clientContext,
         private readonly CookieProviderInterface $cookieProvider,
+        private readonly EventDispatcherInterface $eventDispatcher,
         private readonly string $cookieName,
         private readonly string $cookieExpiration,
     ) {
@@ -32,6 +35,13 @@ final class StoreCookieSubscriber implements EventSubscriberInterface
     public function store(ResponseEvent $event): void
     {
         if (!$event->isMainRequest()) {
+            return;
+        }
+
+        $preStoreEvent = new PreStoreCookieEvent($event->getRequest(), $event->getResponse());
+        $this->eventDispatcher->dispatch($preStoreEvent);
+
+        if (!$preStoreEvent->store) {
             return;
         }
 
