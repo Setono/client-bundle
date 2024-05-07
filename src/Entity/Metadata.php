@@ -8,7 +8,7 @@ class Metadata implements MetadataInterface
 {
     protected ?string $clientId = null;
 
-    /** @var array<string, mixed>|null */
+    /** @var null|array{__expires?: array<string, int>, ...<string, mixed>} */
     protected ?array $metadata = [];
 
     public function getClientId(): ?string
@@ -21,9 +21,6 @@ class Metadata implements MetadataInterface
         $this->clientId = $clientId;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     public function getMetadata(): array
     {
         return $this->metadata ?? [];

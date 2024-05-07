@@ -39,7 +39,11 @@ final class DoctrineOrmBasedMetadataProvider implements MetadataProviderInterfac
                 $metadata = $entity->getMetadata();
             }
 
-            /** @psalm-suppress DirectConstructorCall */
+            /**
+             * todo remove the MixedArgumentTypeCoercion suppression when this issue is fixed: https://github.com/vimeo/psalm/issues/10964
+             *
+             * @psalm-suppress DirectConstructorCall,MixedArgumentTypeCoercion
+             */
             $instance->__construct($metadata);
         });
     }

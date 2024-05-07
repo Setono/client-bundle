@@ -11,7 +11,7 @@ interface MetadataInterface
     public function setClientId(string $clientId): void;
 
     /**
-     * @return array<string, mixed>
+     * @return array{__expires?: array<string, int>, ...<string, mixed>}
      */
     public function getMetadata(): array;
 
