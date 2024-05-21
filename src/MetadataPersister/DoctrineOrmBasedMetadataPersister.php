@@ -6,20 +6,15 @@ namespace Setono\ClientBundle\MetadataPersister;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\Persistence\ManagerRegistry;
-use Psr\Log\LoggerAwareInterface;
-use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 use Setono\Client\Client;
 use Setono\ClientBundle\Client\ChangeAwareMetadata;
 use Setono\ClientBundle\Client\LazyChangeAwareMetadata;
 use Setono\ClientBundle\Entity\MetadataInterface as MetadataEntityInterface;
 use Setono\Doctrine\ORMTrait;
 
-final class DoctrineOrmBasedMetadataPersister implements MetadataPersisterInterface, LoggerAwareInterface
+final class DoctrineOrmBasedMetadataPersister implements MetadataPersisterInterface
 {
     use ORMTrait;
-
-    private LoggerInterface $logger;
 
     public function __construct(
         ManagerRegistry $managerRegistry,
@@ -28,7 +23,6 @@ final class DoctrineOrmBasedMetadataPersister implements MetadataPersisterInterf
         private readonly string $metadataEntityClass,
     ) {
         $this->managerRegistry = $managerRegistry;
-        $this->logger = new NullLogger();
     }
 
     public function persist(Client $client): void
@@ -59,14 +53,6 @@ final class DoctrineOrmBasedMetadataPersister implements MetadataPersisterInterf
         try {
             $manager->flush();
         } catch (UniqueConstraintViolationException) {
-            // todo how to handle this?
-
-            $this->logger->error(sprintf('Unique constraint violation occurred while persisting metadata for client id %s', $client->id));
         }
-    }
-
-    public function setLogger(LoggerInterface $logger): void
-    {
-        $this->logger = $logger;
     }
 }

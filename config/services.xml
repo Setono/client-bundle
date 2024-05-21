@@ -82,10 +82,6 @@
                  class="Setono\ClientBundle\MetadataPersister\DoctrineOrmBasedMetadataPersister">
             <argument type="service" id="doctrine"/>
             <argument>%setono_client.metadata_class%</argument>
-
-            <call method="setLogger">
-                <argument type="service" id="logger" on-invalid="ignore"/>
-            </call>
         </service>
 
         <!-- Metadata Providers -->
