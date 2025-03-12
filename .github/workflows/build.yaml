@@ -78,11 +78,8 @@ jobs:
                     coverage: "none"
                     extensions: "${{ env.PHP_EXTENSIONS }}"
                     php-version: "${{ matrix.php-version }}"
-                    tools: "composer-require-checker, composer-unused, flex"
+                    tools: "flex"
 
-            -   name: "Remove require-dev section in composer.json"
-                run: "composer config --unset require-dev"
-            
             -   name: "Install composer dependencies"
                 uses: "ramsey/composer-install@v3"
                 with:
@@ -90,11 +87,8 @@ jobs:
                 env:
                     SYMFONY_REQUIRE: "${{ matrix.symfony }}"
 
-            -   name: "Run maglnet/composer-require-checker"
-                run: "composer-require-checker check"
-
-            -   name: "Run composer-unused/composer-unused"
-                run: "composer-unused"
+            -   name: "Run dependency analysis"
+                run: "vendor/bin/composer-dependency-analyser"
 
     static-code-analysis:
         name: "Static Code Analysis"
