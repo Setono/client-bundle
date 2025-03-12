@@ -33,7 +33,8 @@
         "psalm/plugin-phpunit": "^0.19",
         "psalm/plugin-symfony": "^5.1",
         "setono/code-quality-pack": "^2.7",
-        "shipmonk/composer-dependency-analyser": "^1.8"
+        "shipmonk/composer-dependency-analyser": "^1.8",
+        "vimeo/psalm": "^6.8.8"
     },
     "prefer-stable": true,
     "autoload": {
