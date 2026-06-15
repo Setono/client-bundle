@@ -1,0 +1,16 @@
+parameters:
+    level: max
+    phpVersion:
+        min: 80100
+        max: 80400
+    paths:
+        - src
+        - tests
+    ignoreErrors:
+        # Symfony's LazyGhostTrait initializer must call __construct() on the ghost
+        # instance to populate it. This is the documented idiom for lazy ghosts, so
+        # phpstan-strict-rules' ban on calling __construct() does not apply here.
+        -
+            identifier: constructor.call
+            path: src/MetadataProvider/DoctrineOrmBasedMetadataProvider.php
+            count: 1

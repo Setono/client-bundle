@@ -1,0 +1,16 @@
+{
+    "$schema": "vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": [
+            "src"
+        ]
+    },
+    "mutators": {
+        "@default": true,
+        "InstanceOf_": {
+            "ignore": [
+                "Setono\\ClientBundle\\EventListener\\Doctrine\\ConvertToEntityListener::loadClassMetadata"
+            ]
+        }
+    }
+}

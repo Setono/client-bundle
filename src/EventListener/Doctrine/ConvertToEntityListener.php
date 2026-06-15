@@ -14,6 +14,9 @@ use Setono\ClientBundle\Entity\Metadata;
  */
 final class ConvertToEntityListener
 {
+    /**
+     * @param LoadClassMetadataEventArgs<\Doctrine\Persistence\Mapping\ClassMetadata<object>, \Doctrine\Persistence\ObjectManager> $eventArgs
+     */
     public function loadClassMetadata(LoadClassMetadataEventArgs $eventArgs): void
     {
         if (!is_a($eventArgs->getClassMetadata()->getName(), Metadata::class, true)) {

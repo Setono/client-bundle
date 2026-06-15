@@ -19,9 +19,9 @@ final class CachedCookieProvider implements CookieProviderInterface
     ) {
     }
 
-    public function getCookie(Request $request = null): ?Cookie
+    public function getCookie(?Request $request = null): ?Cookie
     {
-        $request = $request ?? $this->requestStack->getMainRequest();
+        $request ??= $this->requestStack->getMainRequest();
         if (null === $request) {
             return null;
         }
