@@ -63,6 +63,11 @@
             "infection/extension-installer": true,
             "phpstan/extension-installer": true
         },
+        "policy": {
+            "advisories": {
+                "block": false
+            }
+        },
         "sort-packages": true
     },
     "scripts": {
