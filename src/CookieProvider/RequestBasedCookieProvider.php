@@ -16,7 +16,7 @@ final class RequestBasedCookieProvider implements CookieProviderInterface
     ) {
     }
 
-    public function getCookie(Request $request = null): ?Cookie
+    public function getCookie(?Request $request = null): ?Cookie
     {
         $cookieValue = ($request ?? $this->requestStack->getMainRequest())?->cookies->get($this->cookieName);
         if (!is_string($cookieValue) || '' === $cookieValue) {

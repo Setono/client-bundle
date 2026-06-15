@@ -15,8 +15,6 @@ final class SetonoClientExtension extends Extension
     public function load(array $configs, ContainerBuilder $container): void
     {
         /**
-         * @psalm-suppress PossiblyNullArgument
-         *
          * @var array{cookie: array{name: string, expiration: string}, metadata_class: class-string} $config
          */
         $config = $this->processConfiguration($this->getConfiguration([], $container), $configs);

@@ -27,13 +27,23 @@
         "symfony/var-exporter": "^6.4 || ^7.0"
     },
     "require-dev": {
+        "ergebnis/composer-normalize": "^2.50",
+        "infection/infection": "^0.27 || ^0.28",
+        "jangregor/phpstan-prophecy": "^2.3",
         "matthiasnoback/symfony-dependency-injection-test": "^4.3.1 || ^5.1",
-        "phpspec/prophecy-phpunit": "^2.2",
+        "phpspec/prophecy": "^1.20",
+        "phpspec/prophecy-phpunit": "^2.5",
+        "phpstan/extension-installer": "^1.4.3",
+        "phpstan/phpstan": "^2.1.46",
+        "phpstan/phpstan-doctrine": "^2.0",
+        "phpstan/phpstan-phpunit": "^2.0.16",
+        "phpstan/phpstan-strict-rules": "^2.0.10",
+        "phpstan/phpstan-symfony": "^2.0",
+        "phpstan/phpstan-webmozart-assert": "^2.0",
         "phpunit/phpunit": "^10.5",
-        "psalm/plugin-phpunit": "^0.19",
-        "psalm/plugin-symfony": "^5.1",
-        "setono/code-quality-pack": "^2.7",
-        "shipmonk/composer-dependency-analyser": "^1.8.2"
+        "rector/rector": "^2.4.1",
+        "shipmonk/composer-dependency-analyser": "^1.8.4",
+        "sylius-labs/coding-standard": "^4.5"
     },
     "prefer-stable": true,
     "autoload": {
@@ -49,14 +59,22 @@
     "config": {
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": false,
-            "ergebnis/composer-normalize": true
+            "ergebnis/composer-normalize": true,
+            "infection/extension-installer": true,
+            "phpstan/extension-installer": true
+        },
+        "policy": {
+            "advisories": {
+                "block": false
+            }
         },
         "sort-packages": true
     },
     "scripts": {
-        "analyse": "psalm",
+        "analyse": "phpstan analyse",
         "check-style": "ecs check",
         "fix-style": "ecs check --fix",
+        "infection": "infection",
         "phpunit": "phpunit"
     }
 }
