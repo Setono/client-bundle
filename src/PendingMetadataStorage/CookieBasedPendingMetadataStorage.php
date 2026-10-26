@@ -25,7 +25,6 @@ final class CookieBasedPendingMetadataStorage implements PendingMetadataStorageI
     public function __construct(
         private readonly string $cookieName,
         private readonly string $cookieExpiration,
-        #[\SensitiveParameter]
         private readonly string $secret,
     ) {
     }
