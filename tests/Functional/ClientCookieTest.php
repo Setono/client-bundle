@@ -6,11 +6,10 @@ namespace Setono\ClientBundle\Tests\Functional;
 
 use Setono\Client\Cookie;
 use Symfony\Component\BrowserKit\Cookie as BrowserCookie;
+use Symfony\Component\Uid\Uuid;
 
 final class ClientCookieTest extends FunctionalTestCase
 {
-    private const UUID_PATTERN = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/';
-
     /**
      * @test
      */
@@ -22,7 +21,7 @@ final class ClientCookieTest extends FunctionalTestCase
         self::assertResponseHasCookie(self::COOKIE_NAME);
 
         $clientId = $this->getClientId();
-        self::assertMatchesRegularExpression(self::UUID_PATTERN, $clientId);
+        self::assertTrue(Uuid::isValid($clientId));
         self::assertSame($clientId, $this->browser->getResponse()->getContent());
     }
 
@@ -98,7 +97,7 @@ final class ClientCookieTest extends FunctionalTestCase
         $this->browser->request('GET', '/');
 
         $clientId = $this->getClientId();
-        self::assertMatchesRegularExpression(self::UUID_PATTERN, $clientId);
+        self::assertTrue(Uuid::isValid($clientId));
         self::assertSame($clientId, $this->browser->getResponse()->getContent());
     }
 
