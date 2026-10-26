@@ -16,6 +16,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Webmozart\Assert\Assert;
 
 final class ClientController
 {
@@ -72,7 +73,7 @@ final class ClientController
         $client->metadata->set($request->query->getString('key'), $request->query->getString('value'));
 
         $manager = $this->managerRegistry->getManagerForClass($this->metadataClass);
-        \assert($manager instanceof EntityManagerInterface);
+        Assert::isInstanceOf($manager, EntityManagerInterface::class);
 
         $manager->getEventManager()->addEventListener(Events::onFlush, new class($manager->getConnection(), $manager->getClassMetadata($this->metadataClass), $client->id) {
             /**
