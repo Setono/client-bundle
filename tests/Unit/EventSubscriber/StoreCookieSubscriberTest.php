@@ -7,6 +7,7 @@ namespace Setono\ClientBundle\Tests\Unit\EventSubscriber;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
 use Prophecy\PhpUnit\ProphecyTrait;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Setono\Client\Client;
 use Setono\Client\Cookie;
 use Setono\ClientBundle\Context\ClientContextInterface;
@@ -111,17 +112,14 @@ final class StoreCookieSubscriberTest extends TestCase
         $cookieProvider = $this->prophesize(CookieProviderInterface::class);
         $cookieProvider->getCookie(Argument::type(Request::class))->willReturn(null);
 
-        $subscriber = new StoreCookieSubscriber(
-            $clientContext->reveal(),
-            $cookieProvider->reveal(),
-            new EventDispatcher(),
-            'custom_name',
-            '+30 days',
-        );
-
         $before = time();
         $response = new Response();
-        $subscriber->store($this->createResponseEvent(new Request(), $response));
+        $this->createSubscriber(
+            $clientContext->reveal(),
+            $cookieProvider->reveal(),
+            cookieName: 'custom_name',
+            cookieExpiration: '+30 days',
+        )->store($this->createResponseEvent(new Request(), $response));
 
         $cookies = $response->headers->getCookies();
         self::assertCount(1, $cookies);
@@ -162,14 +160,9 @@ final class StoreCookieSubscriberTest extends TestCase
         });
 
         $response = new Response();
-        $subscriber = new StoreCookieSubscriber(
-            $clientContext->reveal(),
-            $cookieProvider->reveal(),
-            $eventDispatcher,
-            self::COOKIE_NAME,
-            '+365 days',
+        $this->createSubscriber($clientContext->reveal(), $cookieProvider->reveal(), $eventDispatcher)->store(
+            $this->createResponseEvent(new Request(), $response),
         );
-        $subscriber->store($this->createResponseEvent(new Request(), $response));
 
         self::assertCount(0, $response->headers->getCookies());
     }
@@ -177,14 +170,11 @@ final class StoreCookieSubscriberTest extends TestCase
     private function createSubscriber(
         ClientContextInterface $clientContext,
         CookieProviderInterface $cookieProvider,
+        EventDispatcherInterface $eventDispatcher = new EventDispatcher(),
+        string $cookieName = self::COOKIE_NAME,
+        string $cookieExpiration = '+365 days',
     ): StoreCookieSubscriber {
-        return new StoreCookieSubscriber(
-            $clientContext,
-            $cookieProvider,
-            new EventDispatcher(),
-            self::COOKIE_NAME,
-            '+365 days',
-        );
+        return new StoreCookieSubscriber($clientContext, $cookieProvider, $eventDispatcher, $cookieName, $cookieExpiration);
     }
 
     private function createResponseEvent(

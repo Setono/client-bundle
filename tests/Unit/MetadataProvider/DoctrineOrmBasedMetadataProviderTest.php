@@ -9,6 +9,7 @@ use Doctrine\Persistence\ManagerRegistry;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
 use Prophecy\PhpUnit\ProphecyTrait;
+use Prophecy\Prophecy\ObjectProphecy;
 use Setono\Client\Metadata;
 use Setono\ClientBundle\Client\LazyChangeAwareMetadata;
 use Setono\ClientBundle\Entity\Metadata as MetadataEntity;
@@ -27,18 +28,9 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
         $manager = $this->prophesize(EntityManagerInterface::class);
         $manager->find(Argument::cetera())->shouldNotBeCalled();
 
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass(MetadataEntity::class)->willReturn($manager);
-
         $decorated = $this->prophesize(MetadataProviderInterface::class);
 
-        $provider = new DoctrineOrmBasedMetadataProvider(
-            $decorated->reveal(),
-            $managerRegistry->reveal(),
-            MetadataEntity::class,
-        );
-
-        $metadata = $provider->getMetadata('some-client-id');
+        $metadata = $this->createProvider($this->createManagerRegistry($manager), $decorated)->getMetadata('some-client-id');
 
         self::assertInstanceOf(LazyChangeAwareMetadata::class, $metadata);
         self::assertFalse($metadata->isLazyObjectInitialized());
@@ -51,19 +43,10 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
     {
         $manager = $this->prophesize(EntityManagerInterface::class);
 
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass(MetadataEntity::class)->willReturn($manager);
-
         $decorated = $this->prophesize(MetadataProviderInterface::class);
         $decorated->getMetadata('some-client-id')->willReturn(new Metadata());
 
-        $provider = new DoctrineOrmBasedMetadataProvider(
-            $decorated->reveal(),
-            $managerRegistry->reveal(),
-            MetadataEntity::class,
-        );
-
-        $metadata = $provider->getMetadata('some-client-id');
+        $metadata = $this->createProvider($this->createManagerRegistry($manager), $decorated)->getMetadata('some-client-id');
         $metadata->set('some-key', 'some-value');
 
         self::assertInstanceOf(LazyChangeAwareMetadata::class, $metadata);
@@ -84,19 +67,10 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
         $manager = $this->prophesize(EntityManagerInterface::class);
         $manager->find(MetadataEntity::class, 'some-client-id')->willReturn($entity);
 
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass(MetadataEntity::class)->willReturn($manager);
-
         $decorated = $this->prophesize(MetadataProviderInterface::class);
         $decorated->getMetadata(Argument::any())->shouldNotBeCalled();
 
-        $provider = new DoctrineOrmBasedMetadataProvider(
-            $decorated->reveal(),
-            $managerRegistry->reveal(),
-            MetadataEntity::class,
-        );
-
-        $metadata = $provider->getMetadata('some-client-id');
+        $metadata = $this->createProvider($this->createManagerRegistry($manager), $decorated)->getMetadata('some-client-id');
 
         self::assertSame('bar', $metadata->get('foo'));
         self::assertInstanceOf(LazyChangeAwareMetadata::class, $metadata);
@@ -111,22 +85,35 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
         $manager = $this->prophesize(EntityManagerInterface::class);
         $manager->find(MetadataEntity::class, 'some-client-id')->willReturn(null);
 
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass(MetadataEntity::class)->willReturn($manager);
-
         $decorated = $this->prophesize(MetadataProviderInterface::class);
         $decorated->getMetadata('some-client-id')->willReturn(new Metadata(['foo' => 'bar']));
 
-        $provider = new DoctrineOrmBasedMetadataProvider(
-            $decorated->reveal(),
-            $managerRegistry->reveal(),
-            MetadataEntity::class,
-        );
-
-        $metadata = $provider->getMetadata('some-client-id');
+        $metadata = $this->createProvider($this->createManagerRegistry($manager), $decorated)->getMetadata('some-client-id');
 
         self::assertSame('bar', $metadata->get('foo'));
         self::assertInstanceOf(LazyChangeAwareMetadata::class, $metadata);
         self::assertFalse($metadata->isDirty());
+    }
+
+    /**
+     * @param ObjectProphecy<EntityManagerInterface> $manager
+     *
+     * @return ObjectProphecy<ManagerRegistry>
+     */
+    private function createManagerRegistry(ObjectProphecy $manager): ObjectProphecy
+    {
+        $managerRegistry = $this->prophesize(ManagerRegistry::class);
+        $managerRegistry->getManagerForClass(MetadataEntity::class)->willReturn($manager);
+
+        return $managerRegistry;
+    }
+
+    /**
+     * @param ObjectProphecy<ManagerRegistry> $managerRegistry
+     * @param ObjectProphecy<MetadataProviderInterface> $decorated
+     */
+    private function createProvider(ObjectProphecy $managerRegistry, ObjectProphecy $decorated): DoctrineOrmBasedMetadataProvider
+    {
+        return new DoctrineOrmBasedMetadataProvider($decorated->reveal(), $managerRegistry->reveal(), MetadataEntity::class);
     }
 }
