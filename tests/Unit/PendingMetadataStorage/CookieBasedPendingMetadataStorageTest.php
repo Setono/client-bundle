@@ -29,11 +29,10 @@ final class CookieBasedPendingMetadataStorageTest extends TestCase
         ]));
 
         $json = '{"url":"https://example.com/æ","amount":1.0}';
-        $signature = hash_hmac('sha256', 'setono_client_pending_metadata.client-id.' . $json, self::SECRET);
 
         $cookie = self::getOnlyCookie($response);
         self::assertSame(self::COOKIE_NAME, $cookie->getName());
-        self::assertSame($json . '.' . $signature, $cookie->getValue());
+        self::assertSame($json . '.' . self::sign('client-id', $json), $cookie->getValue());
         self::assertSame('/', $cookie->getPath());
         self::assertTrue($cookie->isHttpOnly());
         self::assertFalse($cookie->isSecure());
@@ -124,6 +123,31 @@ final class CookieBasedPendingMetadataStorageTest extends TestCase
     }
 
     /**
+     * Only someone who knows the secret can sign such a value
+     *
+     * @test
+     *
+     * @dataProvider provideSignedValuesThatAreNotMetadata
+     */
+    public function it_returns_null_when_the_signed_value_does_not_decode_to_an_array(string $json): void
+    {
+        $request = new Request(cookies: [self::COOKIE_NAME => $json . '.' . self::sign('client-id', $json)]);
+
+        self::assertNull($this->createStorage()->get($request, 'client-id'));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function provideSignedValuesThatAreNotMetadata(): iterable
+    {
+        yield 'string' => ['"foo"'];
+        yield 'integer' => ['1'];
+        yield 'null' => ['null'];
+        yield 'invalid JSON' => ['{"foo":'];
+    }
+
+    /**
      * @test
      */
     public function it_does_not_store_metadata_that_cannot_be_encoded(): void
@@ -211,6 +235,11 @@ final class CookieBasedPendingMetadataStorageTest extends TestCase
         $signatureLength = 64;
 
         return ['k' => str_repeat('a', $length - strlen(rawurlencode('{"k":""}.')) - $signatureLength)];
+    }
+
+    private static function sign(string $clientId, string $json): string
+    {
+        return hash_hmac('sha256', 'setono_client_pending_metadata.' . $clientId . '.' . $json, self::SECRET);
     }
 
     private static function getOnlyCookie(Response $response): Cookie
