@@ -23,7 +23,7 @@ PHP 8.1+ is required (CI runs 8.1 and 8.2). Use the `8.1`/`8.2` shell switchers 
 - Dependency analysis: `vendor/bin/composer-dependency-analyser` (no composer script; see `composer-dependency-analyser.php`)
 - Rector (dry-run): `vendor/bin/rector process --dry-run` (config in `rector.php`, `withPhpSets(php81: true)`; not run in CI)
 
-CI (`.github/workflows/build.yaml`) additionally runs `composer validate --strict` and `composer normalize --dry-run` across the PHP 8.1/8.2 × Symfony 6.4/7.0 matrix.
+CI (`.github/workflows/build.yaml`) additionally runs `composer validate --strict` and `composer normalize --dry-run` across the PHP 8.1/8.2 × Symfony 6.4/7.0 matrix. Pull requests also run Roave's BackwardCompatibilityCheck against their base branch (`.github/workflows/backwards-compatibility-check.yaml`).
 
 > Local note (PHP 8.4): the transitive dev dep `thecodingmachine/safe` emits a flood of implicit-nullable `E_DEPRECATED` notices on PHP 8.4 (they don't exist on CI's 8.1/8.2). This is harmless for PHPStan/PHPUnit but breaks Infection's initial test run — run it with `vendor/bin/infection --initial-tests-php-options="-d error_reporting=24575"` locally on 8.4.
 
@@ -82,4 +82,5 @@ setono_client:
 
 - Strict types everywhere (`declare(strict_types=1)`); concrete classes are `final`, except the metadata/entity classes (`ChangeAwareMetadata`, `LazyChangeAwareMetadata`, `Entity\Metadata`) which are intentionally extensible.
 - New services go in `config/services.xml` using the `setono_client.<concern>.<variant>` id scheme, with a `setono_client.<concern>.default` alias and an interface alias for autowiring. To insert behavior into a chain, add a decorator with an appropriate `decoration-priority` rather than editing existing classes.
+- Public constructors are covered by the BC check, also of `final` classes. Like Symfony, add a new constructor argument at the end as an optional one and `trigger_deprecation('setono/client-bundle', '<next minor>', 'Not passing an instance of "%s" as "$arg" to "%s()" is deprecated, the argument will be required in <next major>.', …)` when it's missing (see `StoreCookieSubscriber`, where a missing pending metadata storage means the metadata of a new client is persisted right away).
 - Tests use `matthiasnoback/symfony-dependency-injection-test` (e.g. `AbstractExtensionTestCase`), `matthiasnoback/symfony-config-test` (`ConfigurationTestCaseTrait`) and Prophecy (`ProphecyTrait`), with the `@test` annotation and snake_case method-name style. Keep the suite at 100% MSI — when adding logic, add a test that kills the corresponding mutant.

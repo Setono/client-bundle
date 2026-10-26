@@ -279,6 +279,57 @@ final class StoreCookieSubscriberTest extends TestCase
     }
 
     /**
+     * @test
+     */
+    public function it_triggers_a_deprecation_when_it_does_not_get_a_pending_metadata_storage(): void
+    {
+        $deprecations = [];
+        set_error_handler(static function (int $level, string $message) use (&$deprecations): bool {
+            $deprecations[] = $message;
+
+            return true;
+        }, \E_USER_DEPRECATED);
+
+        try {
+            self::createSubscriberWithoutPendingMetadataStorage(
+                $this->prophesize(ClientContextInterface::class),
+                $this->prophesize(CookieProviderInterface::class),
+            );
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertSame([sprintf(
+            'Since setono/client-bundle 1.3: Not passing an instance of "%s" as "$pendingMetadataStorage" to "%s::__construct()" is deprecated, the argument will be required in 2.0.',
+            PendingMetadataStorageInterface::class,
+            StoreCookieSubscriber::class,
+        )], $deprecations);
+    }
+
+    /**
+     * @test
+     */
+    public function it_leaves_the_metadata_of_a_new_client_to_be_persisted_right_away_without_a_pending_metadata_storage(): void
+    {
+        $metadata = new ChangeAwareMetadata();
+        $metadata->set('foo', 'bar');
+
+        $clientContext = $this->prophesize(ClientContextInterface::class);
+        $clientContext->getClient()->willReturn(new Client('client-id', $metadata));
+
+        $cookieProvider = $this->prophesize(CookieProviderInterface::class);
+        $cookieProvider->getCookie(Argument::type(Request::class))->willReturn(null);
+
+        $response = new Response();
+        self::createSubscriberWithoutPendingMetadataStorage($clientContext, $cookieProvider)->store(
+            $this->createResponseEvent(new Request(), $response),
+        );
+
+        self::assertCount(1, $response->headers->getCookies());
+        self::assertTrue($metadata->isDirty());
+    }
+
+    /**
      * @param ObjectProphecy<ClientContextInterface> $clientContext
      */
     private function store(
@@ -312,10 +363,27 @@ final class StoreCookieSubscriberTest extends TestCase
         return new StoreCookieSubscriber(
             $clientContext->reveal(),
             $cookieProvider->reveal(),
-            $this->pendingMetadataStorage->reveal(),
             $eventDispatcher,
             $cookieName,
             $cookieExpiration,
+            $this->pendingMetadataStorage->reveal(),
+        );
+    }
+
+    /**
+     * @param ObjectProphecy<ClientContextInterface> $clientContext
+     * @param ObjectProphecy<CookieProviderInterface> $cookieProvider
+     */
+    private static function createSubscriberWithoutPendingMetadataStorage(
+        ObjectProphecy $clientContext,
+        ObjectProphecy $cookieProvider,
+    ): StoreCookieSubscriber {
+        return new StoreCookieSubscriber(
+            $clientContext->reveal(),
+            $cookieProvider->reveal(),
+            new EventDispatcher(),
+            self::COOKIE_NAME,
+            '+365 days',
         );
     }
 
