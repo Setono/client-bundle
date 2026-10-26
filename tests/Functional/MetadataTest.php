@@ -6,7 +6,6 @@ namespace Setono\ClientBundle\Tests\Functional;
 
 use Doctrine\ORM\Tools\SchemaValidator;
 use Setono\Client\Metadata;
-use Symfony\Bridge\Doctrine\Middleware\Debug\DebugDataHolder;
 
 /**
  * Not final, because CustomMetadataClassTest runs these tests with an application's own metadata entity
@@ -27,8 +26,9 @@ class MetadataTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function it_stores_the_metadata_of_a_new_visitor(): void
+    public function it_stores_the_metadata_of_a_returning_visitor(): void
     {
+        $this->becomeReturningVisitor();
         $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
 
         self::assertResponseIsSuccessful();
@@ -38,8 +38,21 @@ class MetadataTest extends FunctionalTestCase
     /**
      * @test
      */
+    public function it_stores_the_metadata_of_a_new_visitor_when_it_comes_back(): void
+    {
+        $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
+        self::assertSame(0, self::countStoredMetadata());
+
+        $this->browser->request('GET', '/');
+        self::assertSame(['foo' => 'bar'], self::fetchStoredMetadata($this->getClientId()));
+    }
+
+    /**
+     * @test
+     */
     public function it_loads_the_stored_metadata_of_a_returning_visitor(): void
     {
+        $this->becomeReturningVisitor();
         $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
 
         $this->browser->request('GET', '/metadata');
@@ -53,6 +66,7 @@ class MetadataTest extends FunctionalTestCase
      */
     public function it_updates_the_stored_metadata_of_a_returning_visitor(): void
     {
+        $this->becomeReturningVisitor();
         $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
         $this->browser->request('GET', '/metadata/set?key=baz&value=qux');
         $this->browser->request('GET', '/metadata/set?key=foo&value=changed');
@@ -67,6 +81,7 @@ class MetadataTest extends FunctionalTestCase
      */
     public function it_removes_metadata(): void
     {
+        $this->becomeReturningVisitor();
         $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
         $this->browser->request('GET', '/metadata/set?key=baz&value=qux');
 
@@ -82,10 +97,12 @@ class MetadataTest extends FunctionalTestCase
      */
     public function it_keeps_the_metadata_of_each_visitor_apart(): void
     {
+        $this->becomeReturningVisitor();
         $this->browser->request('GET', '/metadata/set?key=foo&value=first');
         $firstClientId = $this->getClientId();
 
         $this->browser->getCookieJar()->clear();
+        $this->becomeReturningVisitor();
         $this->browser->request('GET', '/metadata/set?key=foo&value=second');
         $secondClientId = $this->getClientId();
 
@@ -99,6 +116,7 @@ class MetadataTest extends FunctionalTestCase
      */
     public function it_does_not_query_the_database_when_the_metadata_is_not_used(): void
     {
+        $this->becomeReturningVisitor();
         $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
 
         $this->browser->request('GET', '/');
@@ -115,6 +133,8 @@ class MetadataTest extends FunctionalTestCase
      */
     public function it_keeps_the_expiry_of_metadata_between_requests(): void
     {
+        $this->becomeReturningVisitor();
+
         $before = time();
         $this->browser->request('GET', '/metadata/set?key=foo&value=bar&ttl=3600');
 
@@ -137,6 +157,7 @@ class MetadataTest extends FunctionalTestCase
      */
     public function it_removes_expired_metadata(): void
     {
+        $this->becomeReturningVisitor();
         $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
         $clientId = $this->getClientId();
 
@@ -157,6 +178,7 @@ class MetadataTest extends FunctionalTestCase
      */
     public function it_keeps_the_row_of_a_concurrent_request_that_stored_it_first(): void
     {
+        $this->becomeReturningVisitor();
         $this->browser->request('GET', '/metadata/set-concurrently?key=foo&value=bar');
 
         self::assertResponseIsSuccessful();
@@ -187,30 +209,5 @@ class MetadataTest extends FunctionalTestCase
         self::assertIsArray($data);
 
         return $data;
-    }
-
-    /**
-     * Returns the SQL of the queries that the last request executed, as recorded by DoctrineBundle in debug mode
-     *
-     * @return list<string>
-     */
-    private static function getExecutedQueries(): array
-    {
-        $debugDataHolder = self::getContainer()->get('test.doctrine.debug_data_holder');
-        self::assertInstanceOf(DebugDataHolder::class, $debugDataHolder);
-
-        $queries = [];
-        foreach ($debugDataHolder->getData() as $connectionQueries) {
-            self::assertIsArray($connectionQueries);
-
-            foreach ($connectionQueries as $query) {
-                self::assertIsArray($query);
-                self::assertIsString($query['sql']);
-
-                $queries[] = $query['sql'];
-            }
-        }
-
-        return $queries;
     }
 }

@@ -10,6 +10,7 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\Persistence\ManagerRegistry;
 use Setono\Client\Cookie;
 use Setono\ClientBundle\Tests\Functional\App\Kernel;
+use Symfony\Bridge\Doctrine\Middleware\Debug\DebugDataHolder;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -40,6 +41,15 @@ abstract class FunctionalTestCase extends WebTestCase
     protected static function getEnvironment(): string
     {
         return 'test';
+    }
+
+    /**
+     * Gives the browser a client id, so from the next request on it's a returning visitor, whose metadata is persisted
+     * right away. The metadata of a new visitor isn't persisted until it comes back (see NewClientMetadataTest)
+     */
+    protected function becomeReturningVisitor(): void
+    {
+        $this->browser->request('GET', '/');
     }
 
     /**
@@ -112,6 +122,31 @@ abstract class FunctionalTestCase extends WebTestCase
         ], [
             $classMetadata->getColumnName('clientId') => $clientId,
         ]);
+    }
+
+    /**
+     * Returns the SQL of the queries that the last request executed, as recorded by DoctrineBundle in debug mode
+     *
+     * @return list<string>
+     */
+    protected static function getExecutedQueries(): array
+    {
+        $debugDataHolder = self::getContainer()->get('test.doctrine.debug_data_holder');
+        self::assertInstanceOf(DebugDataHolder::class, $debugDataHolder);
+
+        $queries = [];
+        foreach ($debugDataHolder->getData() as $connectionQueries) {
+            self::assertIsArray($connectionQueries);
+
+            foreach ($connectionQueries as $query) {
+                self::assertIsArray($query);
+                self::assertIsString($query['sql']);
+
+                $queries[] = $query['sql'];
+            }
+        }
+
+        return $queries;
     }
 
     protected static function getConnection(): Connection

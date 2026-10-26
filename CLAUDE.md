@@ -60,7 +60,7 @@ A *new* client is one whose request has no id cookie. Its metadata is not persis
 - `StoreCookieSubscriber`, when the cookie is stored: always calls `remove()`, which clears the pending cookie if the request carried one (a `store()` in the same response replaces the clearing cookie).
 - `PendingMetadataClientContext` adopts the pending metadata on the return request (see above).
 - `CookieBasedPendingMetadataStorage` (default, alias `setono_client.pending_metadata_storage.default`): cookie `<cookie name>_pending_metadata`, value `<json>.<hmac-sha256 hex>` signed with `%kernel.secret%` over a context string + client id + JSON, `HttpOnly`, `Secure` on HTTPS, same expiration as the id cookie, max 2048 bytes URL-encoded. JSON flags mirror Doctrine's json type (`JSON_PRESERVE_ZERO_FRACTION`).
-- `tests/Functional/NewClientMetadataTest.php` runs the real services through `HttpKernel` with an in-memory Doctrine manager and shows the whole flow.
+- `tests/Functional/NewClientMetadataTest.php` shows the whole flow in the test app, whose `GoogleClickIdSubscriber` sets metadata on `kernel.response` before (`gclid`) and after (`late_gclid`) `StoreCookieSubscriber`. Functional tests that check what a request stored call `FunctionalTestCase::becomeReturningVisitor()` first, because a new visitor's metadata only reaches the database when it comes back.
 
 ### Entity mapping
 
