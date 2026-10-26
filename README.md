@@ -238,6 +238,8 @@ setono_client:
 
     # Entity used to persist metadata. Override it with your own class to add mapped fields
     # or behaviour; it must implement Setono\ClientBundle\Entity\MetadataInterface.
+    # If your class extends Setono\ClientBundle\Entity\Metadata, map it as an entity: it inherits
+    # the client id and metadata fields, because the bundle's class then stays a mapped superclass.
     metadata_class: Setono\ClientBundle\Entity\Metadata
 ```
 

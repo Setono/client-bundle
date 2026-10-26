@@ -81,6 +81,20 @@ final class SetonoClientExtensionTest extends AbstractExtensionTestCase
     /**
      * @test
      */
+    public function after_loading_the_doctrine_listener_gets_the_configured_metadata_class(): void
+    {
+        $this->load();
+
+        $this->assertContainerBuilderHasServiceDefinitionWithArgument(
+            'setono_client.event_listener_doctrine.convert_to_entity',
+            0,
+            '%setono_client.metadata_class%',
+        );
+    }
+
+    /**
+     * @test
+     */
     public function it_throws_when_the_metadata_class_does_not_implement_the_interface(): void
     {
         $this->expectException(\InvalidArgumentException::class);

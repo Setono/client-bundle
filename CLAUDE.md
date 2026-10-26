@@ -53,7 +53,7 @@ Three concerns are each built as a **Symfony service-decoration chain** in `conf
 
 ### Entity mapping
 
-`Entity/Metadata` (table `setono_client__metadata`, string id `clientId`, nullable `json` `metadata`) is mapped in `config/doctrine-mapping/Metadata.orm.xml` as a **mapped-superclass**. `EventListener/Doctrine/ConvertToEntityListener` listens on Doctrine's `loadClassMetadata` and flips `isMappedSuperclass = false` so the bundle's own `Metadata` becomes a concrete entity when the app provides no replacement. Apps can swap in a custom class via the `metadata_class` config option; `SetonoClientExtension::load()` enforces that it implements `Entity/MetadataInterface` and they are responsible for mapping it.
+`Entity/Metadata` (table `setono_client__metadata`, string id `clientId`, nullable `json` `metadata`) is mapped in `config/doctrine-mapping/Metadata.orm.xml` as a **mapped-superclass**. `EventListener/Doctrine/ConvertToEntityListener` listens on Doctrine's `loadClassMetadata` and flips `isMappedSuperclass = false` on the configured `metadata_class` only, so with the default config the bundle's own `Metadata` becomes a concrete entity. Apps can swap in a custom class via the `metadata_class` config option; `SetonoClientExtension::load()` enforces that it implements `Entity/MetadataInterface` and they are responsible for mapping it. A custom entity that extends `Entity/Metadata` inherits its fields, because the bundle's class then stays a mapped superclass (`tests/Functional/CustomMetadataClassTest.php` covers this).
 
 ### Configuration
 
