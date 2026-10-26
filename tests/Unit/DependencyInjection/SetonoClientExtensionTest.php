@@ -7,10 +7,13 @@ namespace Setono\ClientBundle\Tests\Unit\DependencyInjection;
 use Matthias\SymfonyDependencyInjectionTest\PhpUnit\AbstractExtensionTestCase;
 use Setono\ClientBundle\Context\ClientContextInterface;
 use Setono\ClientBundle\Context\DefaultClientContext;
+use Setono\ClientBundle\Context\PendingMetadataClientContext;
 use Setono\ClientBundle\CookieProvider\RequestBasedCookieProvider;
 use Setono\ClientBundle\DependencyInjection\SetonoClientExtension;
 use Setono\ClientBundle\Entity\Metadata;
 use Setono\ClientBundle\EventListener\Doctrine\ConvertToEntityListener;
+use Setono\ClientBundle\PendingMetadataStorage\CookieBasedPendingMetadataStorage;
+use Setono\ClientBundle\PendingMetadataStorage\PendingMetadataStorageInterface;
 use Setono\ClientBundle\Tests\Unit\DependencyInjection\Fixture\CustomMetadata;
 use Setono\ClientBundle\Tests\Unit\DependencyInjection\Fixture\InterfaceOnlyMetadata;
 
@@ -63,6 +66,47 @@ final class SetonoClientExtensionTest extends AbstractExtensionTestCase
         $this->assertContainerBuilderHasService('setono_client.client_context.default', DefaultClientContext::class);
         $this->assertContainerBuilderHasService('setono_client.cookie_provider.default', RequestBasedCookieProvider::class);
         $this->assertContainerBuilderHasAlias(ClientContextInterface::class, 'setono_client.client_context.default');
+    }
+
+    /**
+     * @test
+     */
+    public function after_loading_the_pending_metadata_services_are_registered(): void
+    {
+        $this->load();
+
+        $this->assertContainerBuilderHasService(
+            'setono_client.pending_metadata_storage.cookie_based',
+            CookieBasedPendingMetadataStorage::class,
+        );
+        $this->assertContainerBuilderHasServiceDefinitionWithArgument(
+            'setono_client.pending_metadata_storage.cookie_based',
+            0,
+            '%setono_client.cookie.name%_pending_metadata',
+        );
+        $this->assertContainerBuilderHasServiceDefinitionWithArgument(
+            'setono_client.pending_metadata_storage.cookie_based',
+            2,
+            '%kernel.secret%',
+        );
+        $this->assertContainerBuilderHasAlias(
+            'setono_client.pending_metadata_storage.default',
+            'setono_client.pending_metadata_storage.cookie_based',
+        );
+        $this->assertContainerBuilderHasAlias(
+            PendingMetadataStorageInterface::class,
+            'setono_client.pending_metadata_storage.default',
+        );
+
+        $this->assertContainerBuilderHasService(
+            'setono_client.client_context.pending_metadata',
+            PendingMetadataClientContext::class,
+        );
+        // between the cached (32) and the cookie based (64) client context
+        self::assertSame(
+            ['setono_client.client_context.default', null, 48],
+            $this->container->getDefinition('setono_client.client_context.pending_metadata')->getDecoratedService(),
+        );
     }
 
     /**
