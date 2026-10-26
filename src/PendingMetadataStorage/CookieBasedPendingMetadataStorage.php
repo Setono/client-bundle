@@ -46,8 +46,14 @@ final class CookieBasedPendingMetadataStorage implements PendingMetadataStorageI
             return null;
         }
 
-        /** @var array<string, mixed> $metadata */
+        /** @var array<string, mixed>|scalar|null $metadata */
         $metadata = json_decode($json, true);
+
+        // The signature proves that store() encoded the metadata, so this only fails for someone who knows the secret.
+        // Invalid JSON decodes to null too
+        if (!is_array($metadata)) {
+            return null;
+        }
 
         return $metadata;
     }
