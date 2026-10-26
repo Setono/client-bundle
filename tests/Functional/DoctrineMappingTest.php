@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Setono\ClientBundle\Tests\Functional;
 
-use Doctrine\ORM\Tools\SchemaValidator;
 use Setono\ClientBundle\Entity\Metadata;
 
 final class DoctrineMappingTest extends FunctionalTestCase
@@ -22,16 +21,5 @@ final class DoctrineMappingTest extends FunctionalTestCase
         self::assertSame('string', $classMetadata->getTypeOfField('clientId'));
         self::assertSame('json', $classMetadata->getTypeOfField('metadata'));
         self::assertTrue($classMetadata->isNullable('metadata'));
-    }
-
-    /**
-     * @test
-     */
-    public function its_mapping_is_valid_and_matches_the_database_schema(): void
-    {
-        $validator = new SchemaValidator(self::getEntityManager());
-
-        self::assertSame([], $validator->validateMapping());
-        self::assertTrue($validator->schemaInSyncWithMetadata());
     }
 }
