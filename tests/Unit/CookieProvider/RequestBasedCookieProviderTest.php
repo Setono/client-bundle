@@ -59,6 +59,39 @@ final class RequestBasedCookieProviderTest extends TestCase
     /**
      * @test
      */
+    public function it_returns_null_when_the_client_id_is_empty(): void
+    {
+        $provider = new RequestBasedCookieProvider(new RequestStack(), self::COOKIE_NAME);
+        $request = new Request([], [], [], [self::COOKIE_NAME => '2.1.1.']);
+
+        self::assertNull($provider->getCookie($request));
+    }
+
+    /**
+     * @test
+     */
+    public function it_returns_null_when_the_client_id_is_longer_than_255_characters(): void
+    {
+        $provider = new RequestBasedCookieProvider(new RequestStack(), self::COOKIE_NAME);
+        $request = new Request([], [], [], [self::COOKIE_NAME => (new Cookie(str_repeat('a', 256)))->toString()]);
+
+        self::assertNull($provider->getCookie($request));
+    }
+
+    /**
+     * @test
+     */
+    public function it_accepts_a_client_id_of_255_characters(): void
+    {
+        $provider = new RequestBasedCookieProvider(new RequestStack(), self::COOKIE_NAME);
+        $request = new Request([], [], [], [self::COOKIE_NAME => (new Cookie(str_repeat('a', 255)))->toString()]);
+
+        self::assertSame(str_repeat('a', 255), $provider->getCookie($request)?->clientId);
+    }
+
+    /**
+     * @test
+     */
     public function it_prefers_the_given_request_over_the_main_request(): void
     {
         $mainRequest = new Request([], [], [], [self::COOKIE_NAME => (new Cookie('main-id'))->toString()]);

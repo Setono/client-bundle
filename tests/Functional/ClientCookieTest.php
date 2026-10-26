@@ -104,6 +104,20 @@ final class ClientCookieTest extends FunctionalTestCase
     /**
      * @test
      */
+    public function it_treats_a_visitor_with_an_empty_client_id_as_a_new_visitor(): void
+    {
+        $this->setCookie('2.1.1.');
+
+        $this->browser->request('GET', '/');
+
+        $clientId = $this->getClientId();
+        self::assertTrue(Uuid::isValid($clientId));
+        self::assertSame($clientId, $this->browser->getResponse()->getContent());
+    }
+
+    /**
+     * @test
+     */
     public function it_does_not_set_the_cookie_when_a_listener_vetoes_it(): void
     {
         $this->browser->request('GET', '/?skip_cookie=1');

@@ -25,12 +25,12 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
      */
     public function it_returns_lazy_metadata(): void
     {
-        $manager = $this->prophesize(EntityManagerInterface::class);
-        $manager->find(Argument::cetera())->shouldNotBeCalled();
+        $managerRegistry = $this->prophesize(ManagerRegistry::class);
+        $managerRegistry->getManagerForClass(Argument::cetera())->shouldNotBeCalled();
 
         $decorated = $this->prophesize(MetadataProviderInterface::class);
 
-        $metadata = $this->createProvider($this->createManagerRegistry($manager), $decorated)->getMetadata('some-client-id');
+        $metadata = $this->createProvider($managerRegistry, $decorated)->getMetadata('some-client-id');
 
         self::assertInstanceOf(LazyChangeAwareMetadata::class, $metadata);
         self::assertFalse($metadata->isLazyObjectInitialized());

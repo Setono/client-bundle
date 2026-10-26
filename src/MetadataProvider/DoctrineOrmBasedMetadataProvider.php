@@ -27,11 +27,10 @@ final class DoctrineOrmBasedMetadataProvider implements MetadataProviderInterfac
 
     public function getMetadata(string $clientId): Metadata
     {
-        $manager = $this->getManager($this->metadataEntityClass);
-
-        return LazyChangeAwareMetadata::createLazyGhost(function (Metadata $instance) use ($clientId, $manager): void {
+        // The manager is looked up when the metadata is used, so a request that doesn't use it doesn't start the entity manager
+        return LazyChangeAwareMetadata::createLazyGhost(function (Metadata $instance) use ($clientId): void {
             /** @var MetadataInterface|null $entity */
-            $entity = $manager->find($this->metadataEntityClass, $clientId);
+            $entity = $this->getManager($this->metadataEntityClass)->find($this->metadataEntityClass, $clientId);
 
             if (null === $entity) {
                 $metadata = $this->decorated->getMetadata($clientId)->toArray();

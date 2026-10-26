@@ -10,6 +10,8 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 final class RequestBasedCookieProvider implements CookieProviderInterface
 {
+    private const MAX_CLIENT_ID_LENGTH = 255;
+
     public function __construct(
         private readonly RequestStack $requestStack,
         private readonly string $cookieName,
@@ -24,9 +26,16 @@ final class RequestBasedCookieProvider implements CookieProviderInterface
         }
 
         try {
-            return Cookie::fromString($cookieValue);
+            $cookie = Cookie::fromString($cookieValue);
         } catch (\InvalidArgumentException) {
             return null;
         }
+
+        // All visitors with an empty client id would share one client, and the database column holds 255 characters
+        if ('' === $cookie->clientId || strlen($cookie->clientId) > self::MAX_CLIENT_ID_LENGTH) {
+            return null;
+        }
+
+        return $cookie;
     }
 }
