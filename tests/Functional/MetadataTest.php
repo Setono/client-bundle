@@ -53,7 +53,8 @@ final class MetadataTest extends FunctionalTestCase
         $this->browser->request('GET', '/metadata/set?key=baz&value=qux');
         $this->browser->request('GET', '/metadata/set?key=foo&value=changed');
 
-        self::assertSame(['foo' => 'changed', 'baz' => 'qux'], self::fetchStoredMetadata($this->getClientId()));
+        // assertEquals() because MySQL doesn't keep the order of the keys in a JSON column
+        self::assertEquals(['foo' => 'changed', 'baz' => 'qux'], self::fetchStoredMetadata($this->getClientId()));
         self::assertSame(1, self::countStoredMetadata());
     }
 
