@@ -22,14 +22,26 @@ use Symfony\Component\HttpKernel\KernelEvents;
 
 final class StoreCookieSubscriber implements EventSubscriberInterface
 {
+    /**
+     * @param PendingMetadataStorageInterface|null $pendingMetadataStorage without it, the metadata of a new client is persisted right away
+     */
     public function __construct(
         private readonly ClientContextInterface $clientContext,
         private readonly CookieProviderInterface $cookieProvider,
-        private readonly PendingMetadataStorageInterface $pendingMetadataStorage,
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly string $cookieName,
         private readonly string $cookieExpiration,
+        private readonly ?PendingMetadataStorageInterface $pendingMetadataStorage = null,
     ) {
+        if (null === $pendingMetadataStorage) {
+            trigger_deprecation(
+                'setono/client-bundle',
+                '1.3',
+                'Not passing an instance of "%s" as "$pendingMetadataStorage" to "%s()" is deprecated, the argument will be required in 2.0.',
+                PendingMetadataStorageInterface::class,
+                __METHOD__,
+            );
+        }
     }
 
     public static function getSubscribedEvents(): array
@@ -66,7 +78,7 @@ final class StoreCookieSubscriber implements EventSubscriberInterface
 
         // Pending metadata sent by the client is handed to the client when it's resolved, at the latest when its metadata
         // is persisted on kernel.finish_request (see PendingMetadataClientContext), so the client can forget it
-        $this->pendingMetadataStorage->remove($request, $response);
+        $this->pendingMetadataStorage?->remove($request, $response);
 
         if (null === $cookie) {
             $client = $this->clientContext->getClient();
@@ -87,7 +99,7 @@ final class StoreCookieSubscriber implements EventSubscriberInterface
     private function storePendingMetadata(Request $request, Response $response, Client $client): void
     {
         $metadata = $client->metadata;
-        if (!$metadata instanceof ChangeAwareMetadata || !$metadata->isDirty()) {
+        if (null === $this->pendingMetadataStorage || !$metadata instanceof ChangeAwareMetadata || !$metadata->isDirty()) {
             return;
         }
 
