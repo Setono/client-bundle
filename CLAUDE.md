@@ -12,7 +12,10 @@ This is a library/bundle — there is no runnable application here. It is exerci
 
 PHP 8.1+ is required (CI runs 8.1 and 8.2). Use the `8.1`/`8.2` shell switchers if needed. The dev tooling is the individually-pinned set from `setono/code-quality-pack` (inlined into `require-dev` rather than depending on the meta-package); PHPUnit is held at `^10.5` so PHP 8.1 stays supported (PHPUnit 11 needs 8.2).
 
-- Tests: `composer phpunit` (or `vendor/bin/phpunit`). Unit tests live in `tests/Unit` (the `unit` suite: `vendor/bin/phpunit --testsuite unit`)
+- Tests: `composer phpunit` (or `vendor/bin/phpunit`) runs both suites; pick one with `--testsuite unit` or `--testsuite functional`
+  - `tests/Unit`: isolated classes with Prophecy doubles.
+  - `tests/Functional`: the bundle inside a real Symfony app (`tests/Functional/App/Kernel.php`: FrameworkBundle + DoctrineBundle + this bundle), driven over HTTP with `KernelBrowser` against a SQLite database. Extend `FunctionalTestCase`, which recreates the schema before each test and has helpers to read the stored metadata. Every request gets a new container, like PHP-FPM. The kernel's cache, log and database live in `sys_get_temp_dir()/setono-client-bundle<TEST_TOKEN>/`, so nothing is generated in the repo and parallel Infection processes don't share a database. Set `DATABASE_URL` to run against another database.
+  - No DAMA DoctrineTestBundle on purpose: its `doctrine/doctrine-bundle ^2.11` / `doctrine/dbal ^3.3` requirements would lift the CI "lowest" jobs from ORM 2/DBAL 2.13 to ORM 3/DBAL 3.8, so ORM 2 would no longer be tested. With a single table, recreating the schema per test is fast enough.
 - Single test: `vendor/bin/phpunit --filter after_loading_the_correct_parameter_has_been_set` or by path `vendor/bin/phpunit tests/Unit/DependencyInjection/SetonoClientExtensionTest.php`
 - Static analysis: `composer analyse` (PHPStan at `level: max`, config in `phpstan.neon.dist`; auto-loads the doctrine/symfony/phpunit/strict-rules extensions via `phpstan/extension-installer`)
 - Check style: `composer check-style` (ECS, Sylius Labs ruleset)
