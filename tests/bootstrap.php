@@ -17,7 +17,7 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 (new Filesystem())->remove(Kernel::getVarDir() . '/cache');
 
 // DAMA DoctrineTestBundle rolls back what each test writes, so the schema is created once, before it starts its transactions
-foreach (['test'] as $environment) {
+foreach (['test', Kernel::ENVIRONMENT_CUSTOM_METADATA] as $environment) {
     $kernel = new Kernel($environment, true);
     $kernel->boot();
 

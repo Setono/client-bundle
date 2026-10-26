@@ -125,6 +125,14 @@ final class Kernel extends BaseKernel
                     ],
                 ],
             ]);
+
+            // DAMA DoctrineTestBundle shares its static connection and its static metadata cache between kernels by the
+            // names of the connection and the cache, which are the same in both environments. But this environment has
+            // its own database and maps the bundle's Metadata as a mapped superclass
+            $container->extension('dama_doctrine_test', [
+                'connection_keys' => ['default' => self::ENVIRONMENT_CUSTOM_METADATA],
+                'enable_static_meta_data_cache' => false,
+            ]);
         }
     }
 
