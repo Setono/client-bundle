@@ -32,7 +32,7 @@ final class Kernel extends BaseKernel
 
     public function getCacheDir(): string
     {
-        return $this->getVarDir() . '/cache/' . $this->environment;
+        return $this->getVarDir() . '/cache/' . $this->getEnvironment();
     }
 
     public function getLogDir(): string
