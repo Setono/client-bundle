@@ -7,39 +7,21 @@ namespace Setono\ClientBundle\Tests\Functional;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
-use Doctrine\ORM\Tools\SchemaTool;
 use Doctrine\Persistence\ManagerRegistry;
 use Setono\Client\Cookie;
 use Setono\ClientBundle\Tests\Functional\App\Kernel;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Component\Filesystem\Filesystem;
 
 /**
- * Boots the test application with a fresh database. Like PHP-FPM, every request is handled by a new container
+ * Boots the test application. tests/bootstrap.php creates the schema once, and DAMA DoctrineTestBundle rolls back
+ * what each test writes. Like PHP-FPM, every request is handled by a new container
  */
 abstract class FunctionalTestCase extends WebTestCase
 {
     protected const COOKIE_NAME = 'setono_client_id';
 
     protected KernelBrowser $browser;
-
-    private static bool $cacheCleared = false;
-
-    /**
-     * Infection runs every mutant in a new process, but swaps in the mutated code without changing the modification time of the file.
-     * A container compiled by an earlier process would look fresh, and could lack the mutant or contain the mutant of that process.
-     * So every process compiles the container again
-     */
-    public static function setUpBeforeClass(): void
-    {
-        parent::setUpBeforeClass();
-
-        if (!self::$cacheCleared) {
-            (new Filesystem())->remove(Kernel::getVarDir() . '/cache');
-            self::$cacheCleared = true;
-        }
-    }
 
     protected function setUp(): void
     {
@@ -48,12 +30,6 @@ abstract class FunctionalTestCase extends WebTestCase
 
         // An exception fails the test instead of becoming an error response
         $this->browser->catchExceptions(false);
-
-        $manager = self::getEntityManager();
-        $classes = $manager->getMetadataFactory()->getAllMetadata();
-        $schemaTool = new SchemaTool($manager);
-        $schemaTool->dropSchema($classes);
-        $schemaTool->createSchema($classes);
     }
 
     protected static function getKernelClass(): string

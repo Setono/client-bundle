@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Setono\ClientBundle\Tests\Functional;
 
-use Doctrine\DBAL\Exception\TableNotFoundException;
 use Setono\Client\Metadata;
+use Symfony\Bridge\Doctrine\Middleware\Debug\DebugDataHolder;
 
 final class MetadataTest extends FunctionalTestCase
 {
@@ -97,15 +97,13 @@ final class MetadataTest extends FunctionalTestCase
     {
         $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
 
-        // From now on, every query on the metadata fails
-        self::getConnection()->executeStatement(sprintf('DROP TABLE %s', self::getMetadataClassMetadata()->getTableName()));
-
         $this->browser->request('GET', '/');
         self::assertResponseIsSuccessful();
+        self::assertSame([], self::getExecutedQueries());
 
-        // Proves that the query would have failed
-        $this->expectException(TableNotFoundException::class);
+        // Proves that the queries of a request are recorded
         $this->browser->request('GET', '/metadata');
+        self::assertNotSame([], self::getExecutedQueries());
     }
 
     /**
@@ -171,5 +169,30 @@ final class MetadataTest extends FunctionalTestCase
         self::assertIsArray($data);
 
         return $data;
+    }
+
+    /**
+     * Returns the SQL of the queries that the last request executed, as recorded by DoctrineBundle in debug mode
+     *
+     * @return list<string>
+     */
+    private static function getExecutedQueries(): array
+    {
+        $debugDataHolder = self::getContainer()->get('test.doctrine.debug_data_holder');
+        self::assertInstanceOf(DebugDataHolder::class, $debugDataHolder);
+
+        $queries = [];
+        foreach ($debugDataHolder->getData() as $connectionQueries) {
+            self::assertIsArray($connectionQueries);
+
+            foreach ($connectionQueries as $query) {
+                self::assertIsArray($query);
+                self::assertIsString($query['sql']);
+
+                $queries[] = $query['sql'];
+            }
+        }
+
+        return $queries;
     }
 }

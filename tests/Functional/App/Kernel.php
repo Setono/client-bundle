@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Setono\ClientBundle\Tests\Functional\App;
 
+use DAMA\DoctrineTestBundle\DAMADoctrineTestBundle;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
+use Doctrine\DBAL\Connection;
 use Setono\ClientBundle\SetonoClientBundle;
 use Setono\ClientBundle\Tests\Functional\App\Controller\ClientController;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
@@ -22,6 +24,7 @@ final class Kernel extends BaseKernel
     {
         yield new FrameworkBundle();
         yield new DoctrineBundle();
+        yield new DAMADoctrineTestBundle();
         yield new SetonoClientBundle();
     }
 
@@ -72,8 +75,16 @@ final class Kernel extends BaseKernel
         // the bundle's tables in it. The variable isn't DATABASE_URL, so the tests can't pick up the database of another application
         $container->parameters()->set('env(SETONO_CLIENT_BUNDLE_DATABASE_URL)', 'sqlite:///%kernel.cache_dir%/test.db');
 
+        $dbal = ['url' => '%env(resolve:SETONO_CLIENT_BUNDLE_DATABASE_URL)%'];
+
+        // DAMA DoctrineTestBundle runs each test in a transaction, so the transactions of the bundle need savepoints.
+        // DBAL 4 always uses them and deprecates the option. Like DoctrineBundle, this tells DBAL 3 by its getEventManager()
+        if (method_exists(Connection::class, 'getEventManager')) {
+            $dbal['use_savepoints'] = true;
+        }
+
         $container->extension('doctrine', [
-            'dbal' => ['url' => '%env(resolve:SETONO_CLIENT_BUNDLE_DATABASE_URL)%'],
+            'dbal' => $dbal,
             'orm' => [],
         ]);
 
@@ -81,6 +92,9 @@ final class Kernel extends BaseKernel
 
         // Logs warnings and errors to a file instead of the test output. It's in the cache dir, so it's removed with the cache
         $services->set('logger', Logger::class)->args(['warning', '%kernel.cache_dir%/log.txt']);
+
+        // Lets the tests read the queries that a request executed
+        $services->alias('test.doctrine.debug_data_holder', 'doctrine.debug_data_holder')->public();
 
         $services
             ->defaults()->autowire()->autoconfigure()
