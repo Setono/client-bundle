@@ -68,14 +68,16 @@ final class CachedCookieProviderTest extends TestCase
      */
     public function it_resolves_the_cookie_of_each_request_separately(): void
     {
-        $firstRequest = Request::create('/first');
+        // The requests are equal, so only their identity tells them apart. Prophecy compares arguments with ==, so the stub checks the identity itself
+        $firstRequest = new Request();
         $firstCookie = new Cookie('first-client-id');
-        $secondRequest = Request::create('/second');
+        $secondRequest = new Request();
         $secondCookie = new Cookie('second-client-id');
 
         $decorated = $this->prophesize(CookieProviderInterface::class);
-        $decorated->getCookie($firstRequest)->willReturn($firstCookie);
-        $decorated->getCookie($secondRequest)->willReturn($secondCookie);
+        $decorated->getCookie(Argument::type(Request::class))->will(
+            static fn (array $arguments): Cookie => $arguments[0] === $firstRequest ? $firstCookie : $secondCookie,
+        );
 
         $provider = new CachedCookieProvider($decorated->reveal(), new RequestStack());
 
