@@ -43,4 +43,19 @@ final class ChangeAwareMetadataTest extends TestCase
         self::assertTrue($metadata->isDirty());
         self::assertFalse($metadata->has('foo'));
     }
+
+    /**
+     * @test
+     */
+    public function it_can_be_marked_dirty_and_clean(): void
+    {
+        $metadata = new ChangeAwareMetadata(['foo' => 'bar']);
+
+        $metadata->markDirty();
+        self::assertTrue($metadata->isDirty());
+
+        $metadata->markClean();
+        self::assertFalse($metadata->isDirty());
+        self::assertSame('bar', $metadata->get('foo'));
+    }
 }

@@ -35,8 +35,9 @@ The core abstraction is `ClientContextInterface::getClient(): Client`. Controlle
 
 Three concerns are each built as a **Symfony service-decoration chain** in `config/services.xml`. Higher `decoration-priority` is applied first and ends up *innermost*; the public alias resolves to the outermost decorator. Understanding the resolution order is essential before changing any service wiring:
 
-- **Client context** — runtime order outermost→innermost: `CachedClientContext` (prio 32) → `CookieBasedClientContext` (prio 64) → `DefaultClientContext`.
+- **Client context** — runtime order outermost→innermost: `CachedClientContext` (prio 32) → `PendingMetadataClientContext` (prio 48) → `CookieBasedClientContext` (prio 64) → `DefaultClientContext`.
   - `Cached` memoizes the `Client` for the request. It implements `ResetInterface` and is tagged `kernel.reset`, so long-running runtimes (FrankenPHP worker mode, RoadRunner) don't hand one visitor's client to the next request; `tests/Functional/LongRunningProcessTest.php` covers this. Any new service that holds per-request state needs the same, unless it keys the state by the request object like `CachedCookieProvider`.
+  - `PendingMetadata`: if the main request carries pending metadata signed for the client's id and the client has no metadata yet (`count()` initializes the lazy ghost), returns a new `Client` with that metadata in a `ChangeAwareMetadata` marked dirty, so the persister writes it.
   - `CookieBased` reads the cookie; if present, builds `Client(cookieId, metadataProvider->getMetadata(...))`; otherwise delegates.
   - `Default` returns an anonymous `new Client(null, new ChangeAwareMetadata())`.
 - **Cookie provider** — `CachedCookieProvider` (prio 32, memoizes per `Request` in a `WeakMap` keyed by the request object, so it needs no reset; not `spl_object_hash()`, which PHP hands to a new request once the old one is freed) → `RequestBasedCookieProvider` (parses the cookie off the request). The test kernel keeps its requests alive, so only `CachedCookieProviderTest` can reproduce that handle reuse.
@@ -44,12 +45,22 @@ Three concerns are each built as a **Symfony service-decoration chain** in `conf
 
 ### Request lifecycle
 
-- `EventSubscriber/StoreCookieSubscriber` (on `kernel.response`): dispatches `Event/PreStoreCookieEvent` (an app can set `$store = false` to veto), then writes/refreshes the cookie with an updated `lastSeenAt`. The cookie is set `HttpOnly(false)` on purpose so client-side JS can read it.
+- `EventSubscriber/StoreCookieSubscriber` (on `kernel.response`, priority -64 so metadata set by default-priority response listeners is included, and before the profiler at -100): dispatches `Event/PreStoreCookieEvent` (an app can set `$store = false` to veto), then writes/refreshes the cookie with an updated `lastSeenAt`. The cookie is set `HttpOnly(false)` on purpose so client-side JS can read it. It also handles pending metadata (below).
 - `EventSubscriber/StoreMetadataSubscriber` (on `kernel.finish_request`): calls the metadata persister for the current client.
 
 ### Lazy metadata (why writes are cheap)
 
 `Client/ChangeAwareMetadata` extends `setono/client`'s `Metadata` and flips a `dirty` flag on `set`/`remove`. `Client/LazyChangeAwareMetadata` adds Symfony VarExporter's `LazyGhostTrait`, so `DoctrineOrmBasedMetadataProvider` returns a lazy ghost whose DB query only fires on first access. `DoctrineOrmBasedMetadataPersister::persist()` then **short-circuits** in two cases: the metadata is a lazy ghost that was never initialized (never read), or it is not dirty (never mutated). This is what makes "lazy loaded metadata" in the README real — no SELECT and no flush unless the app touched metadata.
+
+### Pending metadata (new clients)
+
+A *new* client is one whose request has no id cookie. Its metadata is not persisted until it comes back, so clients that never return (crawlers, cookie blockers) never produce a row (issue #8):
+
+- `StoreCookieSubscriber`, for a new client: dirty `ChangeAwareMetadata` goes to `PendingMetadataStorage/PendingMetadataStorageInterface::store()` and is then `markClean()`ed, so `StoreMetadataSubscriber` skips it. If `store()` returns `false` (too big / not JSON encodable) it stays dirty and is persisted right away; anything set after the subscriber ran makes it dirty again and is persisted right away too. On veto, a new client's metadata is `markClean()`ed (discarded), because the client never receives its id.
+- `StoreCookieSubscriber`, when the cookie is stored: always calls `remove()`, which clears the pending cookie if the request carried one (a `store()` in the same response replaces the clearing cookie).
+- `PendingMetadataClientContext` adopts the pending metadata on the return request (see above).
+- `CookieBasedPendingMetadataStorage` (default, alias `setono_client.pending_metadata_storage.default`): cookie `<cookie name>_pending_metadata`, value `<json>.<hmac-sha256 hex>` signed with `%kernel.secret%` over a context string + client id + JSON, `HttpOnly`, `Secure` on HTTPS, same expiration as the id cookie, max 2048 bytes URL-encoded. JSON flags mirror Doctrine's json type (`JSON_PRESERVE_ZERO_FRACTION`).
+- `tests/Functional/NewClientMetadataTest.php` runs the real services through `HttpKernel` with an in-memory Doctrine manager and shows the whole flow.
 
 ### Entity mapping
 
