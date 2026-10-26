@@ -53,6 +53,61 @@ final class DoctrineOrmBasedMetadataPersisterTest extends TestCase
     /**
      * @test
      */
+    public function it_does_nothing_when_the_lazy_metadata_was_only_read(): void
+    {
+        $entity = new MetadataEntity();
+        $entity->setClientId('client-id');
+        $entity->setMetadata(['foo' => 'bar']);
+
+        $manager = $this->prophesize(EntityManagerInterface::class);
+        $manager->find(MetadataEntity::class, 'client-id')->willReturn($entity)->shouldBeCalledOnce();
+        $manager->persist(Argument::cetera())->shouldNotBeCalled();
+        $manager->flush()->shouldNotBeCalled();
+
+        $managerRegistry = $this->createManagerRegistry($manager);
+
+        $metadata = (new DoctrineOrmBasedMetadataProvider(
+            new EmptyMetadataProvider(),
+            $managerRegistry->reveal(),
+            MetadataEntity::class,
+        ))->getMetadata('client-id');
+
+        self::assertSame('bar', $metadata->get('foo'));
+
+        $this->createPersister($managerRegistry)->persist(new Client('client-id', $metadata));
+    }
+
+    /**
+     * @test
+     */
+    public function it_updates_the_entity_when_the_lazy_metadata_was_changed(): void
+    {
+        $entity = new MetadataEntity();
+        $entity->setClientId('client-id');
+        $entity->setMetadata(['foo' => 'bar']);
+
+        $manager = $this->prophesize(EntityManagerInterface::class);
+        $manager->find(MetadataEntity::class, 'client-id')->willReturn($entity);
+        $manager->persist(Argument::cetera())->shouldNotBeCalled();
+        $manager->flush()->shouldBeCalledOnce();
+
+        $managerRegistry = $this->createManagerRegistry($manager);
+
+        $metadata = (new DoctrineOrmBasedMetadataProvider(
+            new EmptyMetadataProvider(),
+            $managerRegistry->reveal(),
+            MetadataEntity::class,
+        ))->getMetadata('client-id');
+        $metadata->set('baz', 'qux');
+
+        $this->createPersister($managerRegistry)->persist(new Client('client-id', $metadata));
+
+        self::assertSame(['foo' => 'bar', 'baz' => 'qux'], $entity->getMetadata());
+    }
+
+    /**
+     * @test
+     */
     public function it_does_nothing_when_the_metadata_is_not_dirty(): void
     {
         $manager = $this->prophesize(EntityManagerInterface::class);

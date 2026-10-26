@@ -50,6 +50,42 @@ final class CachedCookieProviderTest extends TestCase
     /**
      * @test
      */
+    public function it_caches_a_missing_cookie(): void
+    {
+        $request = new Request();
+
+        $decorated = $this->prophesize(CookieProviderInterface::class);
+        $decorated->getCookie($request)->willReturn(null)->shouldBeCalledOnce();
+
+        $provider = new CachedCookieProvider($decorated->reveal(), new RequestStack());
+
+        self::assertNull($provider->getCookie($request));
+        self::assertNull($provider->getCookie($request));
+    }
+
+    /**
+     * @test
+     */
+    public function it_resolves_the_cookie_of_each_request_separately(): void
+    {
+        $firstRequest = Request::create('/first');
+        $firstCookie = new Cookie('first-client-id');
+        $secondRequest = Request::create('/second');
+        $secondCookie = new Cookie('second-client-id');
+
+        $decorated = $this->prophesize(CookieProviderInterface::class);
+        $decorated->getCookie($firstRequest)->willReturn($firstCookie);
+        $decorated->getCookie($secondRequest)->willReturn($secondCookie);
+
+        $provider = new CachedCookieProvider($decorated->reveal(), new RequestStack());
+
+        self::assertSame($firstCookie, $provider->getCookie($firstRequest));
+        self::assertSame($secondCookie, $provider->getCookie($secondRequest));
+    }
+
+    /**
+     * @test
+     */
     public function it_falls_back_to_the_main_request(): void
     {
         $request = new Request();

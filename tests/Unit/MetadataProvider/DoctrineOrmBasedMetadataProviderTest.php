@@ -25,6 +25,7 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
     public function it_returns_lazy_metadata(): void
     {
         $manager = $this->prophesize(EntityManagerInterface::class);
+        $manager->find(Argument::cetera())->shouldNotBeCalled();
 
         $managerRegistry = $this->prophesize(ManagerRegistry::class);
         $managerRegistry->getManagerForClass(MetadataEntity::class)->willReturn($manager);
@@ -98,5 +99,34 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
         $metadata = $provider->getMetadata('some-client-id');
 
         self::assertSame('bar', $metadata->get('foo'));
+        self::assertInstanceOf(LazyChangeAwareMetadata::class, $metadata);
+        self::assertFalse($metadata->isDirty());
+    }
+
+    /**
+     * @test
+     */
+    public function it_falls_back_to_the_decorated_provider_when_the_client_has_no_entity(): void
+    {
+        $manager = $this->prophesize(EntityManagerInterface::class);
+        $manager->find(MetadataEntity::class, 'some-client-id')->willReturn(null);
+
+        $managerRegistry = $this->prophesize(ManagerRegistry::class);
+        $managerRegistry->getManagerForClass(MetadataEntity::class)->willReturn($manager);
+
+        $decorated = $this->prophesize(MetadataProviderInterface::class);
+        $decorated->getMetadata('some-client-id')->willReturn(new Metadata(['foo' => 'bar']));
+
+        $provider = new DoctrineOrmBasedMetadataProvider(
+            $decorated->reveal(),
+            $managerRegistry->reveal(),
+            MetadataEntity::class,
+        );
+
+        $metadata = $provider->getMetadata('some-client-id');
+
+        self::assertSame('bar', $metadata->get('foo'));
+        self::assertInstanceOf(LazyChangeAwareMetadata::class, $metadata);
+        self::assertFalse($metadata->isDirty());
     }
 }

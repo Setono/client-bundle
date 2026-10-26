@@ -81,6 +81,58 @@ final class StoreCookieSubscriberTest extends TestCase
     /**
      * @test
      */
+    public function it_refreshes_the_last_seen_timestamp_and_keeps_the_first_seen_timestamp(): void
+    {
+        $clientContext = $this->prophesize(ClientContextInterface::class);
+
+        $cookieProvider = $this->prophesize(CookieProviderInterface::class);
+        $cookieProvider->getCookie(Argument::type(Request::class))->willReturn(new Cookie('existing-id', 2, 1_000, 2_000));
+
+        $before = time();
+        $response = new Response();
+        $this->createSubscriber($clientContext->reveal(), $cookieProvider->reveal())->store(
+            $this->createResponseEvent(new Request(), $response),
+        );
+
+        $cookie = Cookie::fromString((string) $response->headers->getCookies()[0]->getValue());
+        self::assertSame(1_000, $cookie->firstSeenAt);
+        self::assertGreaterThanOrEqual($before, $cookie->lastSeenAt);
+        self::assertLessThanOrEqual(time(), $cookie->lastSeenAt);
+    }
+
+    /**
+     * @test
+     */
+    public function it_uses_the_configured_cookie_name_and_expiration(): void
+    {
+        $clientContext = $this->prophesize(ClientContextInterface::class);
+        $clientContext->getClient()->willReturn(new Client('client-id'));
+
+        $cookieProvider = $this->prophesize(CookieProviderInterface::class);
+        $cookieProvider->getCookie(Argument::type(Request::class))->willReturn(null);
+
+        $subscriber = new StoreCookieSubscriber(
+            $clientContext->reveal(),
+            $cookieProvider->reveal(),
+            new EventDispatcher(),
+            'custom_name',
+            '+30 days',
+        );
+
+        $before = time();
+        $response = new Response();
+        $subscriber->store($this->createResponseEvent(new Request(), $response));
+
+        $cookies = $response->headers->getCookies();
+        self::assertCount(1, $cookies);
+        self::assertSame('custom_name', $cookies[0]->getName());
+        self::assertGreaterThanOrEqual(strtotime('+30 days', $before), $cookies[0]->getExpiresTime());
+        self::assertLessThanOrEqual(strtotime('+30 days'), $cookies[0]->getExpiresTime());
+    }
+
+    /**
+     * @test
+     */
     public function it_does_not_store_a_cookie_for_sub_requests(): void
     {
         $clientContext = $this->prophesize(ClientContextInterface::class);
