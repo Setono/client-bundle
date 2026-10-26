@@ -79,18 +79,67 @@ final class PendingMetadataClientContextTest extends TestCase
     /**
      * @test
      */
-    public function it_ignores_the_pending_metadata_when_the_client_has_metadata(): void
+    public function it_returns_the_decorated_client_when_its_metadata_has_all_pending_keys(): void
     {
-        $decoratedClient = new Client('client-id', new Metadata(['foo' => 'persisted']));
+        $decoratedClient = new Client('client-id', new Metadata(['foo' => 'persisted', 'bar' => 'baz']));
         $request = new Request();
 
         $storage = $this->prophesize(PendingMetadataStorageInterface::class);
-        $storage->get($request, 'client-id')->willReturn(['foo' => 'pending']);
+        $storage->get($request, 'client-id')->willReturn(['foo' => 'pending', '__expires' => ['foo' => 1893456000]]);
 
         $context = $this->createContext($decoratedClient, $storage->reveal(), self::createRequestStack($request));
 
         self::assertSame($decoratedClient, $context->getClient());
-        self::assertSame(['foo' => 'persisted'], $decoratedClient->metadata->toArray());
+        self::assertSame(['foo' => 'persisted', 'bar' => 'baz'], $decoratedClient->metadata->toArray());
+    }
+
+    /**
+     * @test
+     */
+    public function it_does_not_add_expired_pending_metadata(): void
+    {
+        $decoratedClient = new Client('client-id', new Metadata(['bar' => 'baz']));
+        $request = new Request();
+
+        $storage = $this->prophesize(PendingMetadataStorageInterface::class);
+        $storage->get($request, 'client-id')->willReturn(['foo' => 'pending', '__expires' => ['foo' => time() - 1]]);
+
+        $context = $this->createContext($decoratedClient, $storage->reveal(), self::createRequestStack($request));
+
+        self::assertSame($decoratedClient, $context->getClient());
+    }
+
+    /**
+     * @test
+     */
+    public function it_adds_the_pending_metadata_that_the_client_does_not_have(): void
+    {
+        $request = new Request();
+
+        $storage = $this->prophesize(PendingMetadataStorageInterface::class);
+        $storage->get($request, 'client-id')->willReturn([
+            'foo' => 'pending',
+            'qux' => 'pending',
+            '__expires' => ['foo' => 1893456000, 'qux' => 1893456001],
+        ]);
+
+        $context = $this->createContext(
+            new Client('client-id', new Metadata(['foo' => 'persisted', 'bar' => 'baz', '__expires' => ['bar' => 1893456002]])),
+            $storage->reveal(),
+            self::createRequestStack($request),
+        );
+
+        $client = $context->getClient();
+
+        self::assertSame('client-id', $client->id);
+        self::assertInstanceOf(ChangeAwareMetadata::class, $client->metadata);
+        self::assertTrue($client->metadata->isDirty());
+        self::assertSame([
+            'foo' => 'persisted',
+            'bar' => 'baz',
+            'qux' => 'pending',
+            '__expires' => ['bar' => 1893456002, 'qux' => 1893456001],
+        ], $client->metadata->toArray());
     }
 
     private function createContext(
