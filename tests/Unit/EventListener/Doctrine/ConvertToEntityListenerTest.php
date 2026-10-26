@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Setono\ClientBundle\Tests\EventListener\Doctrine;
+namespace Setono\ClientBundle\Tests\Unit\EventListener\Doctrine;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;

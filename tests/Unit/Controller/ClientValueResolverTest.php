@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Setono\ClientBundle\Tests\Controller;
+namespace Setono\ClientBundle\Tests\Unit\Controller;
 
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;

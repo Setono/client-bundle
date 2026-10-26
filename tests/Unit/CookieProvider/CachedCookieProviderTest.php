@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Setono\ClientBundle\Tests\CookieProvider;
+namespace Setono\ClientBundle\Tests\Unit\CookieProvider;
 
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
@@ -45,6 +45,44 @@ final class CachedCookieProviderTest extends TestCase
 
         self::assertSame($cookie, $provider->getCookie($request));
         self::assertSame($cookie, $provider->getCookie($request));
+    }
+
+    /**
+     * @test
+     */
+    public function it_caches_a_missing_cookie(): void
+    {
+        $request = new Request();
+
+        $decorated = $this->prophesize(CookieProviderInterface::class);
+        $decorated->getCookie($request)->willReturn(null)->shouldBeCalledOnce();
+
+        $provider = new CachedCookieProvider($decorated->reveal(), new RequestStack());
+
+        self::assertNull($provider->getCookie($request));
+        self::assertNull($provider->getCookie($request));
+    }
+
+    /**
+     * @test
+     */
+    public function it_resolves_the_cookie_of_each_request_separately(): void
+    {
+        // The requests are equal, so only their identity tells them apart. Prophecy compares arguments with ==, so the stub checks the identity itself
+        $firstRequest = new Request();
+        $firstCookie = new Cookie('first-client-id');
+        $secondRequest = new Request();
+        $secondCookie = new Cookie('second-client-id');
+
+        $decorated = $this->prophesize(CookieProviderInterface::class);
+        $decorated->getCookie(Argument::type(Request::class))->will(
+            static fn (array $arguments): Cookie => $arguments[0] === $firstRequest ? $firstCookie : $secondCookie,
+        );
+
+        $provider = new CachedCookieProvider($decorated->reveal(), new RequestStack());
+
+        self::assertSame($firstCookie, $provider->getCookie($firstRequest));
+        self::assertSame($secondCookie, $provider->getCookie($secondRequest));
     }
 
     /**

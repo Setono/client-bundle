@@ -3,8 +3,8 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd" bootstrap="vendor/autoload.php"
          colors="true" cacheDirectory=".phpunit.cache">
     <testsuites>
-        <testsuite name="Setono Client Bundle Test Suite">
-            <directory>tests</directory>
+        <testsuite name="unit">
+            <directory>tests/Unit</directory>
         </testsuite>
     </testsuites>
     <logging/>

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Setono\ClientBundle\Tests\Client;
+namespace Setono\ClientBundle\Tests\Unit\Client;
 
 use PHPUnit\Framework\TestCase;
 use Setono\ClientBundle\Client\ChangeAwareMetadata;

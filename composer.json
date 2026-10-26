@@ -30,6 +30,7 @@
         "ergebnis/composer-normalize": "^2.50",
         "infection/infection": "^0.27 || ^0.28",
         "jangregor/phpstan-prophecy": "^2.3",
+        "matthiasnoback/symfony-config-test": "^4.3 || ^5.1",
         "matthiasnoback/symfony-dependency-injection-test": "^4.3.1 || ^5.1",
         "phpspec/prophecy": "^1.20",
         "phpspec/prophecy-phpunit": "^2.5",

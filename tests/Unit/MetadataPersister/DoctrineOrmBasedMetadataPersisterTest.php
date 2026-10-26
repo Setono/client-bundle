@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Setono\ClientBundle\Tests\MetadataPersister;
+namespace Setono\ClientBundle\Tests\Unit\MetadataPersister;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -17,8 +17,6 @@ use Setono\ClientBundle\Client\ChangeAwareMetadata;
 use Setono\ClientBundle\Client\LazyChangeAwareMetadata;
 use Setono\ClientBundle\Entity\Metadata as MetadataEntity;
 use Setono\ClientBundle\MetadataPersister\DoctrineOrmBasedMetadataPersister;
-use Setono\ClientBundle\MetadataProvider\DoctrineOrmBasedMetadataProvider;
-use Setono\ClientBundle\MetadataProvider\EmptyMetadataProvider;
 
 final class DoctrineOrmBasedMetadataPersisterTest extends TestCase
 {
@@ -34,20 +32,49 @@ final class DoctrineOrmBasedMetadataPersisterTest extends TestCase
         $manager->persist(Argument::cetera())->shouldNotBeCalled();
         $manager->flush()->shouldNotBeCalled();
 
-        $managerRegistry = $this->createManagerRegistry($manager);
+        $metadata = self::createLazyMetadata(['foo' => 'bar']);
 
-        $metadata = (new DoctrineOrmBasedMetadataProvider(
-            new EmptyMetadataProvider(),
-            $managerRegistry->reveal(),
-            MetadataEntity::class,
-        ))->getMetadata('client-id');
-
-        self::assertInstanceOf(LazyChangeAwareMetadata::class, $metadata);
-        self::assertFalse($metadata->isLazyObjectInitialized());
-
-        $this->createPersister($managerRegistry)->persist(new Client('client-id', $metadata));
+        $this->createPersister($this->createManagerRegistry($manager))->persist(new Client('client-id', $metadata));
 
         self::assertFalse($metadata->isLazyObjectInitialized());
+    }
+
+    /**
+     * @test
+     */
+    public function it_does_nothing_when_the_lazy_metadata_was_only_read(): void
+    {
+        $manager = $this->prophesize(EntityManagerInterface::class);
+        $manager->find(Argument::cetera())->shouldNotBeCalled();
+        $manager->persist(Argument::cetera())->shouldNotBeCalled();
+        $manager->flush()->shouldNotBeCalled();
+
+        $metadata = self::createLazyMetadata(['foo' => 'bar']);
+        self::assertSame('bar', $metadata->get('foo'));
+
+        $this->createPersister($this->createManagerRegistry($manager))->persist(new Client('client-id', $metadata));
+    }
+
+    /**
+     * @test
+     */
+    public function it_updates_the_entity_when_the_lazy_metadata_was_changed(): void
+    {
+        $entity = new MetadataEntity();
+        $entity->setClientId('client-id');
+        $entity->setMetadata(['foo' => 'bar']);
+
+        $manager = $this->prophesize(EntityManagerInterface::class);
+        $manager->find(MetadataEntity::class, 'client-id')->willReturn($entity);
+        $manager->persist(Argument::cetera())->shouldNotBeCalled();
+        $manager->flush()->shouldBeCalledOnce();
+
+        $metadata = self::createLazyMetadata(['foo' => 'bar']);
+        $metadata->set('baz', 'qux');
+
+        $this->createPersister($this->createManagerRegistry($manager))->persist(new Client('client-id', $metadata));
+
+        self::assertSame(['foo' => 'bar', 'baz' => 'qux'], $entity->getMetadata());
     }
 
     /**
@@ -170,6 +197,18 @@ final class DoctrineOrmBasedMetadataPersisterTest extends TestCase
         $managerRegistry->getManagerForClass(MetadataEntity::class)->willReturn($manager);
 
         return $managerRegistry;
+    }
+
+    /**
+     * Returns lazy metadata like the one DoctrineOrmBasedMetadataProvider returns, holding the given data once initialized
+     *
+     * @param array<string, mixed> $data
+     */
+    private static function createLazyMetadata(array $data): LazyChangeAwareMetadata
+    {
+        return LazyChangeAwareMetadata::createLazyGhost(static function (LazyChangeAwareMetadata $instance) use ($data): void {
+            $instance->__construct($data);
+        });
     }
 
     /**

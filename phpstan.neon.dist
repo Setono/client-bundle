@@ -12,3 +12,7 @@ parameters:
             identifier: constructor.call
             path: src/MetadataProvider/DoctrineOrmBasedMetadataProvider.php
             count: 1
+        -
+            identifier: constructor.call
+            path: tests/Unit/MetadataPersister/DoctrineOrmBasedMetadataPersisterTest.php
+            count: 1

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Setono\ClientBundle\Tests\MetadataProvider;
+namespace Setono\ClientBundle\Tests\Unit\MetadataProvider;
 
 use PHPUnit\Framework\TestCase;
 use Setono\ClientBundle\MetadataProvider\EmptyMetadataProvider;

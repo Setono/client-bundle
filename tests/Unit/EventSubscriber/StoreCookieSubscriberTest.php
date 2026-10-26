@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Setono\ClientBundle\Tests\EventSubscriber;
+namespace Setono\ClientBundle\Tests\Unit\EventSubscriber;
 
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
 use Prophecy\PhpUnit\ProphecyTrait;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Setono\Client\Client;
 use Setono\Client\Cookie;
 use Setono\ClientBundle\Context\ClientContextInterface;
@@ -81,6 +82,55 @@ final class StoreCookieSubscriberTest extends TestCase
     /**
      * @test
      */
+    public function it_refreshes_the_last_seen_timestamp_and_keeps_the_first_seen_timestamp(): void
+    {
+        $clientContext = $this->prophesize(ClientContextInterface::class);
+
+        $cookieProvider = $this->prophesize(CookieProviderInterface::class);
+        $cookieProvider->getCookie(Argument::type(Request::class))->willReturn(new Cookie('existing-id', 2, 1_000, 2_000));
+
+        $before = time();
+        $response = new Response();
+        $this->createSubscriber($clientContext->reveal(), $cookieProvider->reveal())->store(
+            $this->createResponseEvent(new Request(), $response),
+        );
+
+        $cookie = Cookie::fromString((string) $response->headers->getCookies()[0]->getValue());
+        self::assertSame(1_000, $cookie->firstSeenAt);
+        self::assertGreaterThanOrEqual($before, $cookie->lastSeenAt);
+        self::assertLessThanOrEqual(time(), $cookie->lastSeenAt);
+    }
+
+    /**
+     * @test
+     */
+    public function it_uses_the_configured_cookie_name_and_expiration(): void
+    {
+        $clientContext = $this->prophesize(ClientContextInterface::class);
+        $clientContext->getClient()->willReturn(new Client('client-id'));
+
+        $cookieProvider = $this->prophesize(CookieProviderInterface::class);
+        $cookieProvider->getCookie(Argument::type(Request::class))->willReturn(null);
+
+        $before = time();
+        $response = new Response();
+        $this->createSubscriber(
+            $clientContext->reveal(),
+            $cookieProvider->reveal(),
+            cookieName: 'custom_name',
+            cookieExpiration: '+30 days',
+        )->store($this->createResponseEvent(new Request(), $response));
+
+        $cookies = $response->headers->getCookies();
+        self::assertCount(1, $cookies);
+        self::assertSame('custom_name', $cookies[0]->getName());
+        self::assertGreaterThanOrEqual(strtotime('+30 days', $before), $cookies[0]->getExpiresTime());
+        self::assertLessThanOrEqual(strtotime('+30 days'), $cookies[0]->getExpiresTime());
+    }
+
+    /**
+     * @test
+     */
     public function it_does_not_store_a_cookie_for_sub_requests(): void
     {
         $clientContext = $this->prophesize(ClientContextInterface::class);
@@ -110,14 +160,9 @@ final class StoreCookieSubscriberTest extends TestCase
         });
 
         $response = new Response();
-        $subscriber = new StoreCookieSubscriber(
-            $clientContext->reveal(),
-            $cookieProvider->reveal(),
-            $eventDispatcher,
-            self::COOKIE_NAME,
-            '+365 days',
+        $this->createSubscriber($clientContext->reveal(), $cookieProvider->reveal(), $eventDispatcher)->store(
+            $this->createResponseEvent(new Request(), $response),
         );
-        $subscriber->store($this->createResponseEvent(new Request(), $response));
 
         self::assertCount(0, $response->headers->getCookies());
     }
@@ -125,14 +170,11 @@ final class StoreCookieSubscriberTest extends TestCase
     private function createSubscriber(
         ClientContextInterface $clientContext,
         CookieProviderInterface $cookieProvider,
+        EventDispatcherInterface $eventDispatcher = new EventDispatcher(),
+        string $cookieName = self::COOKIE_NAME,
+        string $cookieExpiration = '+365 days',
     ): StoreCookieSubscriber {
-        return new StoreCookieSubscriber(
-            $clientContext,
-            $cookieProvider,
-            new EventDispatcher(),
-            self::COOKIE_NAME,
-            '+365 days',
-        );
+        return new StoreCookieSubscriber($clientContext, $cookieProvider, $eventDispatcher, $cookieName, $cookieExpiration);
     }
 
     private function createResponseEvent(
