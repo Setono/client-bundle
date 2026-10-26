@@ -82,9 +82,9 @@ final class ClientCookieTest extends FunctionalTestCase
 
         self::assertSame('client-id', $this->browser->getResponse()->getContent());
 
-        $cookie = $this->getCookie();
-        self::assertSame('client-id', $cookie->clientId);
-        self::assertSame(2, $cookie->version);
+        // Checks the raw value, because the version 1 cookie that was sent parses as a version 2 cookie too
+        self::assertResponseHasCookie(self::COOKIE_NAME);
+        self::assertMatchesRegularExpression('/^2\.\d+\.\d+\.client-id$/', (string) $this->browser->getCookieJar()->get(self::COOKIE_NAME)?->getValue());
     }
 
     /**
@@ -118,13 +118,5 @@ final class ClientCookieTest extends FunctionalTestCase
     private function setCookie(string $value): void
     {
         $this->browser->getCookieJar()->set(new BrowserCookie(self::COOKIE_NAME, $value, null, '/', 'localhost'));
-    }
-
-    private function getCookie(): Cookie
-    {
-        $cookie = $this->browser->getCookieJar()->get(self::COOKIE_NAME);
-        self::assertNotNull($cookie);
-
-        return Cookie::fromString($cookie->getValue());
     }
 }

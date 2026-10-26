@@ -104,7 +104,6 @@ final class MetadataTest extends FunctionalTestCase
         self::assertResponseIsSuccessful();
 
         // Proves that the query would have failed
-        $this->browser->catchExceptions(false);
         $this->expectException(TableNotFoundException::class);
         $this->browser->request('GET', '/metadata');
     }

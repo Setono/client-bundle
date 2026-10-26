@@ -13,6 +13,7 @@ use Setono\Client\Cookie;
 use Setono\ClientBundle\Tests\Functional\App\Kernel;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Filesystem\Filesystem;
 
 /**
  * Boots the test application with a fresh database. Like PHP-FPM, every request is handled by a new container
@@ -23,14 +24,36 @@ abstract class FunctionalTestCase extends WebTestCase
 
     protected KernelBrowser $browser;
 
+    private static bool $cacheCleared = false;
+
+    /**
+     * Infection runs every mutant in a new process, but swaps in the mutated code without changing the modification time of the file.
+     * A container compiled by an earlier process would look fresh, and could lack the mutant or contain the mutant of that process.
+     * So every process compiles the container again
+     */
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+
+        if (!self::$cacheCleared) {
+            (new Filesystem())->remove(Kernel::getVarDir() . '/cache');
+            self::$cacheCleared = true;
+        }
+    }
+
     protected function setUp(): void
     {
-        $this->browser = static::createClient();
+        // Fixed, so APP_ENV and APP_DEBUG in the environment, e.g. from the Symfony CLI, don't change the application
+        $this->browser = static::createClient(['environment' => 'test', 'debug' => true]);
+
+        // An exception fails the test instead of becoming an error response
+        $this->browser->catchExceptions(false);
 
         $manager = self::getEntityManager();
+        $classes = $manager->getMetadataFactory()->getAllMetadata();
         $schemaTool = new SchemaTool($manager);
-        $schemaTool->dropDatabase();
-        $schemaTool->createSchema($manager->getMetadataFactory()->getAllMetadata());
+        $schemaTool->dropSchema($classes);
+        $schemaTool->createSchema($classes);
     }
 
     protected static function getKernelClass(): string
@@ -39,14 +62,22 @@ abstract class FunctionalTestCase extends WebTestCase
     }
 
     /**
-     * Returns the client id stored in the browser's cookie
+     * Returns the cookie stored in the browser
      */
-    protected function getClientId(): string
+    protected function getCookie(): Cookie
     {
         $cookie = $this->browser->getCookieJar()->get(self::COOKIE_NAME);
         self::assertNotNull($cookie, 'The browser does not have the client id cookie');
 
-        return Cookie::fromString($cookie->getValue())->clientId;
+        return Cookie::fromString($cookie->getValue());
+    }
+
+    /**
+     * Returns the client id stored in the browser's cookie
+     */
+    protected function getClientId(): string
+    {
+        return $this->getCookie()->clientId;
     }
 
     /**
@@ -112,7 +143,8 @@ abstract class FunctionalTestCase extends WebTestCase
         $managerRegistry = self::getContainer()->get('doctrine');
         self::assertInstanceOf(ManagerRegistry::class, $managerRegistry);
 
-        $manager = $managerRegistry->getManager();
+        // The bundle uses the manager of the metadata class too
+        $manager = $managerRegistry->getManagerForClass(self::getMetadataClass());
         self::assertInstanceOf(EntityManagerInterface::class, $manager);
 
         return $manager;
@@ -123,10 +155,18 @@ abstract class FunctionalTestCase extends WebTestCase
      */
     protected static function getMetadataClassMetadata(): ClassMetadata
     {
+        return self::getEntityManager()->getClassMetadata(self::getMetadataClass());
+    }
+
+    /**
+     * @return class-string
+     */
+    private static function getMetadataClass(): string
+    {
         $metadataClass = self::getContainer()->getParameter('setono_client.metadata_class');
         self::assertIsString($metadataClass);
         self::assertTrue(class_exists($metadataClass));
 
-        return self::getEntityManager()->getClassMetadata($metadataClass);
+        return $metadataClass;
     }
 }

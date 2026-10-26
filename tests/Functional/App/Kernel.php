@@ -32,12 +32,12 @@ final class Kernel extends BaseKernel
 
     public function getCacheDir(): string
     {
-        return $this->getVarDir() . '/cache/' . $this->getEnvironment();
+        return self::getVarDir() . '/cache/' . $this->getEnvironment();
     }
 
     public function getLogDir(): string
     {
-        return $this->getVarDir() . '/log';
+        return self::getVarDir() . '/log';
     }
 
     /**
@@ -46,15 +46,16 @@ final class Kernel extends BaseKernel
      */
     protected function getConfigDir(): string
     {
-        return $this->getVarDir() . '/config';
+        return self::getVarDir() . '/config';
     }
 
     /**
-     * Infection runs the tests in parallel processes and gives each a token, so each process gets its own database
+     * Each checkout gets its own directory, and so does each of the parallel processes that Infection runs and gives a token.
+     * That way, no two test runs share a container or a database
      */
-    private function getVarDir(): string
+    public static function getVarDir(): string
     {
-        return sprintf('%s/setono-client-bundle%s', sys_get_temp_dir(), (string) getenv('TEST_TOKEN'));
+        return sprintf('%s/setono-client-bundle-%s%s', sys_get_temp_dir(), hash('xxh3', __DIR__), (string) getenv('TEST_TOKEN'));
     }
 
     protected function configureContainer(ContainerConfigurator $container): void
@@ -67,18 +68,19 @@ final class Kernel extends BaseKernel
             'php_errors' => ['log' => true],
         ]);
 
-        // Set the DATABASE_URL environment variable to run the tests against another database
-        $container->parameters()->set('env(DATABASE_URL)', 'sqlite:///%kernel.cache_dir%/test.db');
+        // Set the SETONO_CLIENT_BUNDLE_DATABASE_URL environment variable to run the tests against another database. The tests drop
+        // the bundle's tables in it. The variable isn't DATABASE_URL, so the tests can't pick up the database of another application
+        $container->parameters()->set('env(SETONO_CLIENT_BUNDLE_DATABASE_URL)', 'sqlite:///%kernel.cache_dir%/test.db');
 
         $container->extension('doctrine', [
-            'dbal' => ['url' => '%env(resolve:DATABASE_URL)%'],
+            'dbal' => ['url' => '%env(resolve:SETONO_CLIENT_BUNDLE_DATABASE_URL)%'],
             'orm' => [],
         ]);
 
         $services = $container->services();
 
-        // Logs to a file instead of the test output
-        $services->set('logger', Logger::class)->args(['debug', '%kernel.cache_dir%/log.txt']);
+        // Logs warnings and errors to a file instead of the test output. It's in the cache dir, so it's removed with the cache
+        $services->set('logger', Logger::class)->args(['warning', '%kernel.cache_dir%/log.txt']);
 
         $services
             ->defaults()->autowire()->autoconfigure()
