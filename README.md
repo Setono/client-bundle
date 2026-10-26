@@ -36,7 +36,9 @@ Typical use cases: first‑party analytics, marketing attribution, returning‑v
 | --- | --- |
 | PHP | `>= 8.1` |
 | Symfony | `^6.4` or `^7.0` |
-| Doctrine ORM | `^2.0` or `^3.0` |
+| Doctrine ORM | `^2.17` or `^3.0` |
+| Doctrine DBAL | `^3.7` or `^4.0` |
+| DoctrineBundle | `^2.11.3` |
 
 ## Installation
 
