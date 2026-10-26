@@ -149,6 +149,21 @@ abstract class FunctionalTestCase extends WebTestCase
         return $queries;
     }
 
+    /**
+     * Inserts the client's row, like an application does when it persists metadata outside the client's requests
+     *
+     * @param array<string, mixed> $metadata
+     */
+    protected static function insertMetadata(string $clientId, array $metadata): void
+    {
+        $classMetadata = self::getMetadataClassMetadata();
+
+        self::getConnection()->insert($classMetadata->getTableName(), [
+            $classMetadata->getColumnName('clientId') => $clientId,
+            $classMetadata->getColumnName('metadata') => json_encode($metadata, \JSON_THROW_ON_ERROR),
+        ]);
+    }
+
     protected static function getConnection(): Connection
     {
         return self::getEntityManager()->getConnection();

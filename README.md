@@ -186,6 +186,8 @@ Things to be aware of:
   browser's developer tools until it is persisted. Changing `kernel.secret` discards pending metadata that hasn't been
   persisted yet.
 - Metadata that doesn't fit in about 2 KB, or can't be JSON encoded, is persisted right away.
+- If the database already holds metadata for the visitor when it comes back, e.g. because a message handler stored
+  some, the pending metadata is merged into it. Where both hold a key, the database wins.
 - The metadata of a new client is captured when the cookie is stored (on `kernel.response` with priority `-64`). Set it
   before that, e.g. on `kernel.request`, in a controller, or in a `kernel.response` listener with the default priority.
   Metadata set later is persisted right away.

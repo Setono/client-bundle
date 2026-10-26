@@ -62,6 +62,26 @@ final class NewClientMetadataTest extends FunctionalTestCase
     /**
      * @test
      */
+    public function it_merges_the_metadata_into_metadata_persisted_before_the_new_client_came_back(): void
+    {
+        $this->browser->request('GET', '/?gclid=abc');
+
+        // e.g. by a message handler that the first request dispatched
+        self::insertMetadata($this->getClientId(), ['country' => 'DK']);
+
+        $this->browser->request('GET', '/');
+
+        $metadata = self::fetchStoredMetadata($this->getClientId());
+        self::assertIsArray($metadata);
+        self::assertSame('DK', $metadata['country']);
+        self::assertSame('abc', $metadata['gclid']);
+        self::assertIsArray($metadata[Metadata::EXPIRES_KEY]);
+        self::assertSame(['gclid'], array_keys($metadata[Metadata::EXPIRES_KEY]));
+    }
+
+    /**
+     * @test
+     */
     public function it_persists_the_metadata_right_away_when_it_does_not_fit_in_the_pending_metadata_cookie(): void
     {
         $value = str_repeat('a', 2048);
