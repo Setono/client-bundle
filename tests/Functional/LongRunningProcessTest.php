@@ -38,10 +38,12 @@ final class LongRunningProcessTest extends FunctionalTestCase
      */
     public function it_does_not_give_the_metadata_of_a_visitor_to_the_next_visitor(): void
     {
+        $this->becomeReturningVisitor();
         $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
         $firstClientId = $this->getClientId();
 
         $this->browser->getCookieJar()->clear();
+        $this->becomeReturningVisitor();
         $this->browser->request('GET', '/metadata/set?key=baz&value=qux');
         $this->browser->request('GET', '/metadata');
 
