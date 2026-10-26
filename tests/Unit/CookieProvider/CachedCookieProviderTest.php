@@ -88,6 +88,27 @@ final class CachedCookieProviderTest extends TestCase
     /**
      * @test
      */
+    public function it_resolves_the_cookie_again_after_a_reset(): void
+    {
+        $request = new Request();
+        $firstCookie = new Cookie('first-client-id');
+        $secondCookie = new Cookie('second-client-id');
+
+        $decorated = $this->prophesize(CookieProviderInterface::class);
+        $decorated->getCookie($request)->willReturn($firstCookie, $secondCookie);
+
+        $provider = new CachedCookieProvider($decorated->reveal(), new RequestStack());
+
+        self::assertSame($firstCookie, $provider->getCookie($request));
+
+        $provider->reset();
+
+        self::assertSame($secondCookie, $provider->getCookie($request));
+    }
+
+    /**
+     * @test
+     */
     public function it_falls_back_to_the_main_request(): void
     {
         $request = new Request();

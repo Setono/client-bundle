@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Setono\ClientBundle\Context;
 
 use Setono\Client\Client;
+use Symfony\Contracts\Service\ResetInterface;
 
-final class CachedClientContext implements ClientContextInterface
+final class CachedClientContext implements ClientContextInterface, ResetInterface
 {
     private ?Client $client = null;
 
@@ -21,5 +22,10 @@ final class CachedClientContext implements ClientContextInterface
         }
 
         return $this->client;
+    }
+
+    public function reset(): void
+    {
+        $this->client = null;
     }
 }

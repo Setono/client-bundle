@@ -68,6 +68,17 @@ final class SetonoClientExtensionTest extends AbstractExtensionTestCase
     /**
      * @test
      */
+    public function after_loading_the_services_holding_state_are_reset_between_requests(): void
+    {
+        $this->load();
+
+        $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.client_context.cached', 'kernel.reset', ['method' => 'reset']);
+        $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.cookie_provider.cached', 'kernel.reset', ['method' => 'reset']);
+    }
+
+    /**
+     * @test
+     */
     public function after_loading_the_services_hooking_into_symfony_and_doctrine_are_tagged(): void
     {
         $this->load();

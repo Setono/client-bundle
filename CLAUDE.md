@@ -36,7 +36,7 @@ The core abstraction is `ClientContextInterface::getClient(): Client`. Controlle
 Three concerns are each built as a **Symfony service-decoration chain** in `config/services.xml`. Higher `decoration-priority` is applied first and ends up *innermost*; the public alias resolves to the outermost decorator. Understanding the resolution order is essential before changing any service wiring:
 
 - **Client context** — runtime order outermost→innermost: `CachedClientContext` (prio 32) → `CookieBasedClientContext` (prio 64) → `DefaultClientContext`.
-  - `Cached` memoizes the `Client` for the request.
+  - `Cached` memoizes the `Client` for the request. Like `CachedCookieProvider`, it implements `ResetInterface` and is tagged `kernel.reset`, so long-running runtimes (FrankenPHP worker mode, RoadRunner) don't hand one visitor's client to the next request; `tests/Functional/LongRunningProcessTest.php` covers this. Any new service that holds per-request state needs the same.
   - `CookieBased` reads the cookie; if present, builds `Client(cookieId, metadataProvider->getMetadata(...))`; otherwise delegates.
   - `Default` returns an anonymous `new Client(null, new ChangeAwareMetadata())`.
 - **Cookie provider** — `CachedCookieProvider` (prio 32, memoizes per `Request` via `spl_object_hash`) → `RequestBasedCookieProvider` (parses the cookie off the request).

@@ -7,8 +7,9 @@ namespace Setono\ClientBundle\CookieProvider;
 use Setono\Client\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Contracts\Service\ResetInterface;
 
-final class CachedCookieProvider implements CookieProviderInterface
+final class CachedCookieProvider implements CookieProviderInterface, ResetInterface
 {
     /** @var array<string, Cookie|null> */
     private array $cache = [];
@@ -33,5 +34,10 @@ final class CachedCookieProvider implements CookieProviderInterface
         }
 
         return $this->cache[$hash];
+    }
+
+    public function reset(): void
+    {
+        $this->cache = [];
     }
 }
