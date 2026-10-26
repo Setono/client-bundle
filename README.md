@@ -270,6 +270,11 @@ Every moving part is a service behind an interface, so you can swap or decorate 
 To add behaviour, [decorate](https://symfony.com/doc/current/service_container/service_decoration.html) the relevant
 service rather than replacing it outright — that is exactly how the bundle composes its own defaults.
 
+Decorate the `.default` service of a chain, e.g. `setono_client.client_context.default`, and choose its place with the
+decoration priority. Don't decorate `setono_client.client_context.cached` directly: it is reset between requests in
+long-running runtimes like FrankenPHP's worker mode, and Symfony would then reset your decorator instead. Your decorator
+would have to implement `Symfony\Contracts\Service\ResetInterface` and pass the `reset()` call on.
+
 ## Contributing
 
 ```shell

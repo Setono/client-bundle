@@ -39,4 +39,24 @@ final class CachedClientContextTest extends TestCase
 
         self::assertSame($context->getClient(), $context->getClient());
     }
+
+    /**
+     * @test
+     */
+    public function it_resolves_the_client_again_after_a_reset(): void
+    {
+        $firstClient = new Client('first-id');
+        $secondClient = new Client('second-id');
+
+        $decorated = $this->prophesize(ClientContextInterface::class);
+        $decorated->getClient()->willReturn($firstClient, $secondClient);
+
+        $context = new CachedClientContext($decorated->reveal());
+
+        self::assertSame($firstClient, $context->getClient());
+
+        $context->reset();
+
+        self::assertSame($secondClient, $context->getClient());
+    }
 }

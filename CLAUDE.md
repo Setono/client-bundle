@@ -36,10 +36,10 @@ The core abstraction is `ClientContextInterface::getClient(): Client`. Controlle
 Three concerns are each built as a **Symfony service-decoration chain** in `config/services.xml`. Higher `decoration-priority` is applied first and ends up *innermost*; the public alias resolves to the outermost decorator. Understanding the resolution order is essential before changing any service wiring:
 
 - **Client context** — runtime order outermost→innermost: `CachedClientContext` (prio 32) → `CookieBasedClientContext` (prio 64) → `DefaultClientContext`.
-  - `Cached` memoizes the `Client` for the request.
+  - `Cached` memoizes the `Client` for the request. It implements `ResetInterface` and is tagged `kernel.reset`, so long-running runtimes (FrankenPHP worker mode, RoadRunner) don't hand one visitor's client to the next request; `tests/Functional/LongRunningProcessTest.php` covers this. Any new service that holds per-request state needs the same, unless it keys the state by the request object like `CachedCookieProvider`.
   - `CookieBased` reads the cookie; if present, builds `Client(cookieId, metadataProvider->getMetadata(...))`; otherwise delegates.
   - `Default` returns an anonymous `new Client(null, new ChangeAwareMetadata())`.
-- **Cookie provider** — `CachedCookieProvider` (prio 32, memoizes per `Request` via `spl_object_hash`) → `RequestBasedCookieProvider` (parses the cookie off the request).
+- **Cookie provider** — `CachedCookieProvider` (prio 32, memoizes per `Request` in a `WeakMap` keyed by the request object, so it needs no reset; not `spl_object_hash()`, which PHP hands to a new request once the old one is freed) → `RequestBasedCookieProvider` (parses the cookie off the request). The test kernel keeps its requests alive, so only `CachedCookieProviderTest` can reproduce that handle reuse.
 - **Metadata provider** — `DoctrineOrmBasedMetadataProvider` (prio 64) → `EmptyMetadataProvider` (default). Doctrine loads from DB, falling back to the decorated provider when no row exists.
 
 ### Request lifecycle

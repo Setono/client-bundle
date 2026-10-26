@@ -21,6 +21,8 @@
                  class="Setono\ClientBundle\Context\CachedClientContext"
                  decorates="setono_client.client_context.default" decoration-priority="32">
             <argument type="service" id="setono_client.client_context.cached.inner"/>
+
+            <tag name="kernel.reset" method="reset"/>
         </service>
 
         <!-- Cookie Provider -->
