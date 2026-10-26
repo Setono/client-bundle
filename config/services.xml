@@ -40,8 +40,6 @@
                  decorates="setono_client.cookie_provider.default" decoration-priority="32">
             <argument type="service" id="setono_client.cookie_provider.cached.inner"/>
             <argument type="service" id="request_stack"/>
-
-            <tag name="kernel.reset" method="reset"/>
         </service>
 
         <!-- Controller related -->

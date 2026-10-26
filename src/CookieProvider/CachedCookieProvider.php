@@ -7,17 +7,17 @@ namespace Setono\ClientBundle\CookieProvider;
 use Setono\Client\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Contracts\Service\ResetInterface;
 
-final class CachedCookieProvider implements CookieProviderInterface, ResetInterface
+final class CachedCookieProvider implements CookieProviderInterface
 {
     /**
-     * Keyed by the request object, so an entry goes away with its request. The cookie is wrapped in an array,
-     * because the WeakMap treats an entry holding null as missing
+     * Keyed by the request object, so an entry goes away with its request, and a new request never gets the cookie
+     * of an earlier one. That's why, unlike CachedClientContext, this service needs no reset between requests in
+     * long-running runtimes. The cookie is wrapped in an array, because the WeakMap treats an entry holding null as missing
      *
      * @var \WeakMap<Request, array{cookie: Cookie|null}>
      */
-    private \WeakMap $cache;
+    private readonly \WeakMap $cache;
 
     public function __construct(
         private readonly CookieProviderInterface $decorated,
@@ -36,10 +36,5 @@ final class CachedCookieProvider implements CookieProviderInterface, ResetInterf
         $this->cache[$request] ??= ['cookie' => $this->decorated->getCookie($request)];
 
         return $this->cache[$request]['cookie'];
-    }
-
-    public function reset(): void
-    {
-        $this->cache = new \WeakMap();
     }
 }

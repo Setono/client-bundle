@@ -88,27 +88,6 @@ final class CachedCookieProviderTest extends TestCase
     /**
      * @test
      */
-    public function it_resolves_the_cookie_again_after_a_reset(): void
-    {
-        $request = new Request();
-        $firstCookie = new Cookie('first-client-id');
-        $secondCookie = new Cookie('second-client-id');
-
-        $decorated = $this->prophesize(CookieProviderInterface::class);
-        $decorated->getCookie($request)->willReturn($firstCookie, $secondCookie);
-
-        $provider = new CachedCookieProvider($decorated->reveal(), new RequestStack());
-
-        self::assertSame($firstCookie, $provider->getCookie($request));
-
-        $provider->reset();
-
-        self::assertSame($secondCookie, $provider->getCookie($request));
-    }
-
-    /**
-     * @test
-     */
     public function it_does_not_give_a_new_request_the_cookie_of_a_freed_request(): void
     {
         // A double that doesn't hold on to the requests it receives, unlike a Prophecy double
@@ -124,11 +103,14 @@ final class CachedCookieProviderTest extends TestCase
         $provider = new CachedCookieProvider($decorated, new RequestStack());
 
         $firstRequest = new Request();
+        $firstRequestId = spl_object_id($firstRequest);
         self::assertSame('client-id-1', $provider->getCookie($firstRequest)?->clientId);
         unset($firstRequest);
 
-        // PHP reuses the freed object's handle, so this request would get the same spl_object_hash()
-        self::assertSame('client-id-2', $provider->getCookie(new Request())?->clientId);
+        // PHP reuses the freed object's handle, so this request gets the same spl_object_id() and spl_object_hash()
+        $secondRequest = new Request();
+        self::assertSame($firstRequestId, spl_object_id($secondRequest), 'The new request does not reuse the handle of the freed one, so this test proves nothing');
+        self::assertSame('client-id-2', $provider->getCookie($secondRequest)?->clientId);
     }
 
     /**
