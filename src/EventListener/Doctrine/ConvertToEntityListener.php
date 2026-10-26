@@ -9,8 +9,9 @@ use Doctrine\Persistence\Event\LoadClassMetadataEventArgs;
 use Setono\ClientBundle\Entity\Metadata;
 
 /**
- * If the user of the plugin doesn't add their own Metadata,
- * this listener will make sure that Doctrine sees our Metadata as an entity
+ * The bundle maps its Metadata class as a mapped superclass, so an application can extend it with its own entity.
+ * This listener makes Doctrine see the bundle's Metadata class as an entity. SetonoClientExtension only registers it
+ * when the configured metadata class doesn't extend the bundle's class
  */
 final class ConvertToEntityListener
 {
@@ -19,12 +20,8 @@ final class ConvertToEntityListener
      */
     public function loadClassMetadata(LoadClassMetadataEventArgs $eventArgs): void
     {
-        if (!is_a($eventArgs->getClassMetadata()->getName(), Metadata::class, true)) {
-            return;
-        }
-
         $metadata = $eventArgs->getClassMetadata();
-        if (!$metadata instanceof ClassMetadata) {
+        if (Metadata::class !== $metadata->getName() || !$metadata instanceof ClassMetadata) {
             return;
         }
 

@@ -10,7 +10,9 @@ use Setono\ClientBundle\Context\DefaultClientContext;
 use Setono\ClientBundle\CookieProvider\RequestBasedCookieProvider;
 use Setono\ClientBundle\DependencyInjection\SetonoClientExtension;
 use Setono\ClientBundle\Entity\Metadata;
+use Setono\ClientBundle\EventListener\Doctrine\ConvertToEntityListener;
 use Setono\ClientBundle\Tests\Unit\DependencyInjection\Fixture\CustomMetadata;
+use Setono\ClientBundle\Tests\Unit\DependencyInjection\Fixture\InterfaceOnlyMetadata;
 
 final class SetonoClientExtensionTest extends AbstractExtensionTestCase
 {
@@ -76,6 +78,36 @@ final class SetonoClientExtensionTest extends AbstractExtensionTestCase
         $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.event_listener_doctrine.convert_to_entity', 'doctrine.event_listener', [
             'event' => 'loadClassMetadata',
         ]);
+    }
+
+    /**
+     * @test
+     */
+    public function after_loading_with_a_metadata_class_that_extends_the_bundles_class_the_doctrine_listener_is_removed(): void
+    {
+        $this->load(['metadata_class' => CustomMetadata::class]);
+
+        $this->assertContainerBuilderNotHasService('setono_client.event_listener_doctrine.convert_to_entity');
+    }
+
+    /**
+     * @test
+     */
+    public function after_loading_with_a_metadata_class_that_only_implements_the_interface_the_doctrine_listener_is_kept(): void
+    {
+        $this->load(['metadata_class' => InterfaceOnlyMetadata::class]);
+
+        $this->assertContainerBuilderHasService('setono_client.event_listener_doctrine.convert_to_entity', ConvertToEntityListener::class);
+    }
+
+    /**
+     * @test
+     */
+    public function after_loading_the_metadata_class_parameter_holds_the_declared_class_name(): void
+    {
+        $this->load(['metadata_class' => '\\' . CustomMetadata::class]);
+
+        $this->assertContainerBuilderHasParameter('setono_client.metadata_class', CustomMetadata::class);
     }
 
     /**

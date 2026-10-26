@@ -9,6 +9,7 @@ use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Doctrine\DBAL\Connection;
 use Setono\ClientBundle\SetonoClientBundle;
 use Setono\ClientBundle\Tests\Functional\App\Controller\ClientController;
+use Setono\ClientBundle\Tests\Functional\App\Entity\CustomMetadata;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -19,6 +20,11 @@ use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
 final class Kernel extends BaseKernel
 {
     use MicroKernelTrait;
+
+    /**
+     * In this environment the application stores the metadata in its own entity
+     */
+    public const ENVIRONMENT_CUSTOM_METADATA = 'custom_metadata';
 
     public function registerBundles(): iterable
     {
@@ -101,6 +107,33 @@ final class Kernel extends BaseKernel
             ->load(__NAMESPACE__ . '\\Controller\\', __DIR__ . '/Controller')->tag('controller.service_arguments')
             ->load(__NAMESPACE__ . '\\EventSubscriber\\', __DIR__ . '/EventSubscriber')
         ;
+
+        if (self::ENVIRONMENT_CUSTOM_METADATA === $this->environment) {
+            $container->extension('setono_client', [
+                'metadata_class' => CustomMetadata::class,
+            ]);
+
+            $container->extension('doctrine', [
+                'orm' => [
+                    'mappings' => [
+                        'App' => [
+                            'type' => 'xml',
+                            'is_bundle' => false,
+                            'dir' => __DIR__ . '/config/doctrine',
+                            'prefix' => __NAMESPACE__ . '\\Entity',
+                        ],
+                    ],
+                ],
+            ]);
+
+            // DAMA DoctrineTestBundle shares its static connection and its static metadata cache between kernels by the
+            // names of the connection and the cache, which are the same in both environments. But this environment has
+            // its own database and maps the bundle's Metadata as a mapped superclass
+            $container->extension('dama_doctrine_test', [
+                'connection_keys' => ['default' => self::ENVIRONMENT_CUSTOM_METADATA],
+                'enable_static_meta_data_cache' => false,
+            ]);
+        }
     }
 
     protected function configureRoutes(RoutingConfigurator $routes): void

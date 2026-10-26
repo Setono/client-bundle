@@ -26,7 +26,7 @@ abstract class FunctionalTestCase extends WebTestCase
     protected function setUp(): void
     {
         // Fixed, so APP_ENV and APP_DEBUG in the environment, e.g. from the Symfony CLI, don't change the application
-        $this->browser = static::createClient(['environment' => 'test', 'debug' => true]);
+        $this->browser = static::createClient(['environment' => static::getEnvironment(), 'debug' => true]);
 
         // An exception fails the test instead of becoming an error response
         $this->browser->catchExceptions(false);
@@ -35,6 +35,11 @@ abstract class FunctionalTestCase extends WebTestCase
     protected static function getKernelClass(): string
     {
         return Kernel::class;
+    }
+
+    protected static function getEnvironment(): string
+    {
+        return 'test';
     }
 
     /**

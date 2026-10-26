@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Setono\ClientBundle\Tests\Functional;
 
+use Doctrine\ORM\Tools\SchemaValidator;
 use Setono\Client\Metadata;
 use Symfony\Bridge\Doctrine\Middleware\Debug\DebugDataHolder;
 
-final class MetadataTest extends FunctionalTestCase
+/**
+ * Not final, because CustomMetadataClassTest runs these tests with an application's own metadata entity
+ */
+class MetadataTest extends FunctionalTestCase
 {
     /**
      * @test
@@ -158,6 +162,20 @@ final class MetadataTest extends FunctionalTestCase
         self::assertResponseIsSuccessful();
         self::assertResponseHasCookie(self::COOKIE_NAME);
         self::assertSame(['set_by' => 'concurrent request'], self::fetchStoredMetadata($this->getClientId()));
+    }
+
+    /**
+     * The schema check fails if the mapping makes Doctrine see a difference to the schema it created itself, which would
+     * make every doctrine:migrations:diff generate a migration
+     *
+     * @test
+     */
+    public function its_mapping_is_valid_and_matches_the_database_schema(): void
+    {
+        $validator = new SchemaValidator(self::getEntityManager());
+
+        self::assertSame([], $validator->validateMapping());
+        self::assertTrue($validator->schemaInSyncWithMetadata());
     }
 
     /**
