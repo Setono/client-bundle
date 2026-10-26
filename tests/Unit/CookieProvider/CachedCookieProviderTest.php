@@ -109,6 +109,31 @@ final class CachedCookieProviderTest extends TestCase
     /**
      * @test
      */
+    public function it_does_not_give_a_new_request_the_cookie_of_a_freed_request(): void
+    {
+        // A double that doesn't hold on to the requests it receives, unlike a Prophecy double
+        $decorated = new class() implements CookieProviderInterface {
+            private int $calls = 0;
+
+            public function getCookie(?Request $request = null): Cookie
+            {
+                return new Cookie(sprintf('client-id-%d', ++$this->calls));
+            }
+        };
+
+        $provider = new CachedCookieProvider($decorated, new RequestStack());
+
+        $firstRequest = new Request();
+        self::assertSame('client-id-1', $provider->getCookie($firstRequest)?->clientId);
+        unset($firstRequest);
+
+        // PHP reuses the freed object's handle, so this request would get the same spl_object_hash()
+        self::assertSame('client-id-2', $provider->getCookie(new Request())?->clientId);
+    }
+
+    /**
+     * @test
+     */
     public function it_falls_back_to_the_main_request(): void
     {
         $request = new Request();
