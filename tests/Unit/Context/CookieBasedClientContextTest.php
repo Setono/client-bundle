@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Setono\ClientBundle\Tests\Context;
+namespace Setono\ClientBundle\Tests\Unit\Context;
 
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;

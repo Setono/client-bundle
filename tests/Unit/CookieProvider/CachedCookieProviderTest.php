@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Setono\ClientBundle\Tests\CookieProvider;
+namespace Setono\ClientBundle\Tests\Unit\CookieProvider;
 
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;

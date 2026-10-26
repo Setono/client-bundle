@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Setono\ClientBundle\Tests;
+namespace Setono\ClientBundle\Tests\Unit;
 
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappingsPass;
 use PHPUnit\Framework\TestCase;
@@ -16,7 +16,7 @@ final class SetonoClientBundleTest extends TestCase
      */
     public function its_path_points_to_the_package_root(): void
     {
-        self::assertSame(\dirname(__DIR__), (new SetonoClientBundle())->getPath());
+        self::assertSame(\dirname(__DIR__, 2), (new SetonoClientBundle())->getPath());
     }
 
     /**
@@ -38,7 +38,7 @@ final class SetonoClientBundleTest extends TestCase
 
         self::assertInstanceOf(DoctrineOrmMappingsPass::class, $pass);
         self::assertSame(
-            [\dirname(__DIR__) . '/src/../config/doctrine-mapping' => 'Setono\ClientBundle\Entity'],
+            [\dirname(__DIR__, 2) . '/src/../config/doctrine-mapping' => 'Setono\ClientBundle\Entity'],
             (new \ReflectionProperty($pass, 'namespaces'))->getValue($pass),
         );
     }

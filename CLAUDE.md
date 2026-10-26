@@ -12,8 +12,8 @@ This is a library/bundle — there is no runnable application here. It is exerci
 
 PHP 8.1+ is required (CI runs 8.1 and 8.2). Use the `8.1`/`8.2` shell switchers if needed. The dev tooling is the individually-pinned set from `setono/code-quality-pack` (inlined into `require-dev` rather than depending on the meta-package); PHPUnit is held at `^10.5` so PHP 8.1 stays supported (PHPUnit 11 needs 8.2).
 
-- Tests: `composer phpunit` (or `vendor/bin/phpunit`)
-- Single test: `vendor/bin/phpunit --filter after_loading_the_correct_parameter_has_been_set` or by path `vendor/bin/phpunit tests/DependencyInjection/SetonoClientExtensionTest.php`
+- Tests: `composer phpunit` (or `vendor/bin/phpunit`). Unit tests live in `tests/Unit` (the `Unit` suite: `vendor/bin/phpunit --testsuite Unit`)
+- Single test: `vendor/bin/phpunit --filter after_loading_the_correct_parameter_has_been_set` or by path `vendor/bin/phpunit tests/Unit/DependencyInjection/SetonoClientExtensionTest.php`
 - Static analysis: `composer analyse` (PHPStan at `level: max`, config in `phpstan.neon.dist`; auto-loads the doctrine/symfony/phpunit/strict-rules extensions via `phpstan/extension-installer`)
 - Check style: `composer check-style` (ECS, Sylius Labs ruleset)
 - Fix style: `composer fix-style`

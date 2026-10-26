@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Setono\ClientBundle\Tests\Entity;
+namespace Setono\ClientBundle\Tests\Unit\Entity;
 
 use PHPUnit\Framework\TestCase;
 use Setono\ClientBundle\Entity\Metadata;
