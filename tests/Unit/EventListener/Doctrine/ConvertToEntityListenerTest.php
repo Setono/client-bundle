@@ -11,7 +11,6 @@ use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Setono\ClientBundle\Entity\Metadata;
 use Setono\ClientBundle\EventListener\Doctrine\ConvertToEntityListener;
-use Setono\ClientBundle\Tests\Unit\DependencyInjection\Fixture\CustomMetadata;
 
 final class ConvertToEntityListenerTest extends TestCase
 {
@@ -25,35 +24,9 @@ final class ConvertToEntityListenerTest extends TestCase
         $classMetadata = new ClassMetadata(Metadata::class);
         $classMetadata->isMappedSuperclass = true;
 
-        (new ConvertToEntityListener(Metadata::class))->loadClassMetadata($this->createEventArgs($classMetadata));
+        (new ConvertToEntityListener())->loadClassMetadata($this->createEventArgs($classMetadata));
 
         self::assertFalse($classMetadata->isMappedSuperclass);
-    }
-
-    /**
-     * @test
-     */
-    public function it_turns_a_configured_metadata_class_into_an_entity(): void
-    {
-        $classMetadata = new ClassMetadata(CustomMetadata::class);
-        $classMetadata->isMappedSuperclass = true;
-
-        (new ConvertToEntityListener(CustomMetadata::class))->loadClassMetadata($this->createEventArgs($classMetadata));
-
-        self::assertFalse($classMetadata->isMappedSuperclass);
-    }
-
-    /**
-     * @test
-     */
-    public function it_leaves_the_metadata_mapped_superclass_untouched_when_another_class_is_configured(): void
-    {
-        $classMetadata = new ClassMetadata(Metadata::class);
-        $classMetadata->isMappedSuperclass = true;
-
-        (new ConvertToEntityListener(CustomMetadata::class))->loadClassMetadata($this->createEventArgs($classMetadata));
-
-        self::assertTrue($classMetadata->isMappedSuperclass);
     }
 
     /**
@@ -64,7 +37,7 @@ final class ConvertToEntityListenerTest extends TestCase
         $classMetadata = new ClassMetadata(\stdClass::class);
         $classMetadata->isMappedSuperclass = true;
 
-        (new ConvertToEntityListener(Metadata::class))->loadClassMetadata($this->createEventArgs($classMetadata));
+        (new ConvertToEntityListener())->loadClassMetadata($this->createEventArgs($classMetadata));
 
         self::assertTrue($classMetadata->isMappedSuperclass);
     }

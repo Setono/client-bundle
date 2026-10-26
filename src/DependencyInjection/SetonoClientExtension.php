@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Setono\ClientBundle\DependencyInjection;
 
+use Setono\ClientBundle\Entity\Metadata;
 use Setono\ClientBundle\Entity\MetadataInterface;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -27,10 +28,19 @@ final class SetonoClientExtension extends Extension
             ));
         }
 
+        // Doctrine only knows the class by its declared name, e.g. without a leading backslash
+        $metadataClass = (new \ReflectionClass($config['metadata_class']))->getName();
+
         $container->setParameter('setono_client.cookie.name', $config['cookie']['name']);
         $container->setParameter('setono_client.cookie.expiration', $config['cookie']['expiration']);
-        $container->setParameter('setono_client.metadata_class', $config['metadata_class']);
+        $container->setParameter('setono_client.metadata_class', $metadataClass);
 
         $loader->load('services.xml');
+
+        // An application entity that extends the bundle's Metadata inherits its fields, but only while the bundle's class
+        // stays a mapped superclass. Doctrine would otherwise see two entities without an inheritance mapping
+        if (is_subclass_of($metadataClass, Metadata::class)) {
+            $container->removeDefinition('setono_client.event_listener_doctrine.convert_to_entity');
+        }
     }
 }

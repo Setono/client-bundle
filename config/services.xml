@@ -51,8 +51,6 @@
         <!-- Event listeners -->
         <service id="setono_client.event_listener_doctrine.convert_to_entity"
                  class="Setono\ClientBundle\EventListener\Doctrine\ConvertToEntityListener">
-            <argument>%setono_client.metadata_class%</argument>
-
             <tag name="doctrine.event_listener" event="loadClassMetadata"/>
         </service>
 
