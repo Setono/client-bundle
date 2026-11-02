@@ -9,6 +9,9 @@ jobs:
     backwards-compatibility-check:
         name: "Backwards Compatibility Check"
 
+        # 2.x is the next major, so it may break BC with 1.x. Remove this condition once 2.0.0 is released
+        if: "github.event.pull_request.base.ref != '2.x'"
+
         runs-on: "ubuntu-latest"
 
         steps:

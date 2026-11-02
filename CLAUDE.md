@@ -25,6 +25,8 @@ PHP 8.1+ is required (CI runs 8.1 and 8.2). Use the `8.1`/`8.2` shell switchers 
 
 CI (`.github/workflows/build.yaml`) additionally runs `composer validate --strict` and `composer normalize --dry-run` across the PHP 8.1/8.2 × Symfony 6.4/7.0 matrix.
 
+Branches: `2.x` (the default) is the next major and may break BC; `1.x` is the 1.x maintenance line. The Roave BC check (`.github/workflows/backwards-compatibility-check.yaml`) runs on PRs into `1.x` and skips PRs into `2.x` until 2.0.0 is released.
+
 > Local note (PHP 8.4): the transitive dev dep `thecodingmachine/safe` emits a flood of implicit-nullable `E_DEPRECATED` notices on PHP 8.4 (they don't exist on CI's 8.1/8.2). This is harmless for PHPStan/PHPUnit but breaks Infection's initial test run — run it with `vendor/bin/infection --initial-tests-php-options="-d error_reporting=24575"` locally on 8.4.
 
 ## Architecture
