@@ -72,3 +72,19 @@ setono_client:
 - Strict types everywhere (`declare(strict_types=1)`); concrete classes are `final`, except the metadata/entity classes (`ChangeAwareMetadata`, `LazyChangeAwareMetadata`, `Entity\Metadata`) which are intentionally extensible.
 - New services go in `config/services.xml` using the `setono_client.<concern>.<variant>` id scheme, with a `setono_client.<concern>.default` alias and an interface alias for autowiring. To insert behavior into a chain, add a decorator with an appropriate `decoration-priority` rather than editing existing classes.
 - Tests use `matthiasnoback/symfony-dependency-injection-test` (e.g. `AbstractExtensionTestCase`), `matthiasnoback/symfony-config-test` (`ConfigurationTestCaseTrait`) and Prophecy (`ProphecyTrait`), with the `@test` annotation and snake_case method-name style. Keep the suite at 100% MSI — when adding logic, add a test that kills the corresponding mutant.
+
+## Agent skills
+
+- When grilling (`/mattpocock-skills:grilling`, `/mattpocock-skills:grill-me`, `/mattpocock-skills:grill-with-docs`, and grilling inside other skills), ask via the `AskUserQuestion` tool instead of as plain chat text. The skills ask in chat on purpose and leave this to the project's CLAUDE.md ([mattpocock/skills: native question tool](https://github.com/mattpocock/skills/blob/main/.out-of-scope/native-question-tool.md)).
+
+### Issue tracker
+
+Issues live in GitHub Issues for `Setono/client-bundle`, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Each label is named after its role. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `GLOSSARY.md` and one `docs/adr/` at the repo root. Neither exists yet; they get created as needed. See `docs/agents/domain.md`.
