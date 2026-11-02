@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Setono\ClientBundle\Tests\Unit\DependencyInjection;
 
 use Matthias\SymfonyDependencyInjectionTest\PhpUnit\AbstractExtensionTestCase;
+use Setono\ClientBundle\Context\ClientContext;
 use Setono\ClientBundle\Context\ClientContextInterface;
-use Setono\ClientBundle\Context\DefaultClientContext;
-use Setono\ClientBundle\CookieProvider\RequestBasedCookieProvider;
+use Setono\ClientBundle\Cookie\ClientCookieJar;
 use Setono\ClientBundle\DependencyInjection\SetonoClientExtension;
 use Setono\ClientBundle\Entity\Metadata;
 use Setono\ClientBundle\EventListener\Doctrine\ConvertToEntityListener;
@@ -60,19 +60,19 @@ final class SetonoClientExtensionTest extends AbstractExtensionTestCase
     {
         $this->load();
 
-        $this->assertContainerBuilderHasService('setono_client.client_context.default', DefaultClientContext::class);
-        $this->assertContainerBuilderHasService('setono_client.cookie_provider.default', RequestBasedCookieProvider::class);
+        $this->assertContainerBuilderHasService('setono_client.client_context.default', ClientContext::class);
+        $this->assertContainerBuilderHasService('setono_client.client_cookie_jar', ClientCookieJar::class);
         $this->assertContainerBuilderHasAlias(ClientContextInterface::class, 'setono_client.client_context.default');
     }
 
     /**
      * @test
      */
-    public function after_loading_the_cached_client_context_is_reset_between_requests(): void
+    public function after_loading_the_cached_client_context_wraps_every_other_client_context(): void
     {
         $this->load();
 
-        $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.client_context.cached', 'kernel.reset', ['method' => 'reset']);
+        $this->assertContainerBuilderServiceDecoration('setono_client.client_context.cached', ClientContextInterface::class, null, -1024);
     }
 
     /**

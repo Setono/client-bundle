@@ -9,6 +9,8 @@ use Prophecy\PhpUnit\ProphecyTrait;
 use Setono\Client\Client;
 use Setono\ClientBundle\Context\CachedClientContext;
 use Setono\ClientBundle\Context\ClientContextInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 final class CachedClientContextTest extends TestCase
 {
@@ -17,46 +19,80 @@ final class CachedClientContextTest extends TestCase
     /**
      * @test
      */
-    public function it_returns_the_decorated_client(): void
+    public function it_gives_a_request_one_client(): void
     {
-        $client = new Client('id');
+        $client = new Client('client-id');
 
         $decorated = $this->prophesize(ClientContextInterface::class);
-        $decorated->getClient()->willReturn($client);
+        $decorated->getClient()->willReturn($client)->shouldBeCalledOnce();
 
-        self::assertSame($client, (new CachedClientContext($decorated->reveal()))->getClient());
+        $requestStack = new RequestStack();
+        $requestStack->push(new Request());
+
+        $context = new CachedClientContext($decorated->reveal(), $requestStack);
+
+        self::assertSame($client, $context->getClient());
+        self::assertSame($client, $context->getClient());
     }
 
     /**
      * @test
      */
-    public function it_only_resolves_the_client_once(): void
+    public function it_gives_a_sub_request_the_client_of_the_main_request(): void
     {
+        $client = new Client('client-id');
+
         $decorated = $this->prophesize(ClientContextInterface::class);
-        $decorated->getClient()->willReturn(new Client('id'))->shouldBeCalledOnce();
+        $decorated->getClient()->willReturn($client)->shouldBeCalledOnce();
 
-        $context = new CachedClientContext($decorated->reveal());
+        $requestStack = new RequestStack();
+        $requestStack->push(new Request());
 
-        self::assertSame($context->getClient(), $context->getClient());
+        $context = new CachedClientContext($decorated->reveal(), $requestStack);
+        $context->getClient();
+
+        $requestStack->push(new Request());
+
+        self::assertSame($client, $context->getClient());
     }
 
     /**
      * @test
      */
-    public function it_resolves_the_client_again_after_a_reset(): void
+    public function it_gives_the_next_request_a_client_of_its_own(): void
     {
-        $firstClient = new Client('first-id');
-        $secondClient = new Client('second-id');
+        $firstClient = new Client('first-client-id');
+        $secondClient = new Client('second-client-id');
 
         $decorated = $this->prophesize(ClientContextInterface::class);
         $decorated->getClient()->willReturn($firstClient, $secondClient);
 
-        $context = new CachedClientContext($decorated->reveal());
+        // Like a long-running runtime, which handles many requests with the same service
+        $requestStack = new RequestStack();
+        $context = new CachedClientContext($decorated->reveal(), $requestStack);
+
+        $requestStack->push(new Request());
+        self::assertSame($firstClient, $context->getClient());
+        $requestStack->pop();
+
+        $requestStack->push(new Request());
+        self::assertSame($secondClient, $context->getClient());
+    }
+
+    /**
+     * @test
+     */
+    public function it_passes_every_call_without_a_request_on(): void
+    {
+        $firstClient = new Client('first-client-id');
+        $secondClient = new Client('second-client-id');
+
+        $decorated = $this->prophesize(ClientContextInterface::class);
+        $decorated->getClient()->willReturn($firstClient, $secondClient);
+
+        $context = new CachedClientContext($decorated->reveal(), new RequestStack());
 
         self::assertSame($firstClient, $context->getClient());
-
-        $context->reset();
-
         self::assertSame($secondClient, $context->getClient());
     }
 }

@@ -105,6 +105,7 @@ final class Kernel extends BaseKernel
         $services
             ->defaults()->autowire()->autoconfigure()
             ->load(__NAMESPACE__ . '\\Controller\\', __DIR__ . '/Controller')->tag('controller.service_arguments')
+            ->load(__NAMESPACE__ . '\\Context\\', __DIR__ . '/Context')
             ->load(__NAMESPACE__ . '\\EventSubscriber\\', __DIR__ . '/EventSubscriber')
         ;
 
