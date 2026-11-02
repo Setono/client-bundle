@@ -22,7 +22,7 @@ Typical use cases: first‑party analytics, marketing attribution, returning‑v
   - [Get the current client](#get-the-current-client)
   - [Read and write metadata](#read-and-write-metadata)
   - [Set metadata from a request](#set-metadata-from-a-request)
-  - [Access the cookie directly](#access-the-cookie-directly)
+  - [Read the cookie in JavaScript](#read-the-cookie-in-javascript)
   - [Skip storing the cookie (consent)](#skip-storing-the-cookie-consent)
 - [Configuration](#configuration)
 - [How it works](#how-it-works)
@@ -109,6 +109,9 @@ final class SomeService
 }
 ```
 
+A request gets one client, however often you ask for it. Outside a request (console commands, workers) there is no
+visitor to recognize, so every call returns an *anonymous* client with a new client id that is never stored.
+
 ### Read and write metadata
 
 `$client->metadata` is a key/value store. Reading a key for the first time lazily loads the metadata from the
@@ -164,35 +167,11 @@ final class GoogleClickIdSubscriber implements EventSubscriberInterface
 }
 ```
 
-### Access the cookie directly
+### Read the cookie in JavaScript
 
-The cookie stores the client id plus the first/last seen timestamps. Read it through `CookieProviderInterface`:
-
-```php
-use Setono\ClientBundle\CookieProvider\CookieProviderInterface;
-
-final class SomeService
-{
-    public function __construct(private readonly CookieProviderInterface $cookieProvider)
-    {
-    }
-
-    public function __invoke(): void
-    {
-        $cookie = $this->cookieProvider->getCookie();
-        if (null === $cookie) {
-            return; // visitor has no cookie yet
-        }
-
-        $cookie->clientId;    // the client id
-        $cookie->firstSeenAt; // unix timestamp of first visit
-        $cookie->lastSeenAt;  // unix timestamp of the previous visit
-    }
-}
-```
-
-The cookie is intentionally **not** `HttpOnly`, so you can also read it from JavaScript (e.g. to send the client id
-to a third‑party tag).
+The cookie is intentionally **not** `HttpOnly`, so you can read it from JavaScript (e.g. to send the client id to a
+third‑party tag). Its value is `<version>.<first seen>.<last seen>.<client id>`, with the timestamps as unix timestamps,
+e.g. `2.1700000000.1700086400.0190c3a2-...`.
 
 ### Skip storing the cookie (consent)
 
@@ -247,13 +226,14 @@ setono_client:
 
 ## How it works
 
-- **Cookie** — on each main response, `StoreCookieSubscriber` writes/refreshes the cookie and bumps `lastSeenAt`.
-  A new client id is generated only when no valid cookie is present.
+- **Current client** — `ClientContext` recognizes the client by the cookie of the main request. A request without a
+  valid cookie gets a *new client*, with a new client id. `CachedClientContext` wraps the client context, including
+  your decorators, and gives each request one client.
+- **Cookie** — on each main response, `StoreCookieSubscriber` writes the cookie of the current client and bumps
+  `lastSeenAt`. The cookie always holds the client id of the current client: when that differs from the id in the
+  request's cookie (e.g. because a decorator chose another client), the cookie gets the new id and fresh timestamps.
 - **Lazy metadata** — `$client->metadata` is a lazy ghost object. The database is queried only the first time you
   read a value, and a row is written only at the end of the request, and only if the metadata was actually changed.
-- **Resolution chain** — `ClientContextInterface` is built from a chain of decorating services
-  (`CachedClientContext` → `CookieBasedClientContext` → `DefaultClientContext`). The cached layer memoizes the client
-  per request; the cookie‑based layer builds it from the cookie; the default layer creates a fresh, anonymous client.
 
 ## Extending the bundle
 
@@ -262,7 +242,6 @@ Every moving part is a service behind an interface, so you can swap or decorate 
 | Concern | Interface |
 | --- | --- |
 | Resolving the current client | `Setono\ClientBundle\Context\ClientContextInterface` |
-| Reading the cookie | `Setono\ClientBundle\CookieProvider\CookieProviderInterface` |
 | Loading metadata | `Setono\ClientBundle\MetadataProvider\MetadataProviderInterface` |
 | Persisting metadata | `Setono\ClientBundle\MetadataPersister\MetadataPersisterInterface` |
 | Metadata entity | `Setono\ClientBundle\Entity\MetadataInterface` |
@@ -270,10 +249,33 @@ Every moving part is a service behind an interface, so you can swap or decorate 
 To add behaviour, [decorate](https://symfony.com/doc/current/service_container/service_decoration.html) the relevant
 service rather than replacing it outright — that is exactly how the bundle composes its own defaults.
 
-Decorate the `.default` service of a chain, e.g. `setono_client.client_context.default`, and choose its place with the
-decoration priority. Don't decorate `setono_client.client_context.cached` directly: it is reset between requests in
-long-running runtimes like FrankenPHP's worker mode, and Symfony would then reset your decorator instead. Your decorator
-would have to implement `Symfony\Contracts\Service\ResetInterface` and pass the `reset()` call on.
+To change which client a request gets, e.g. to recognize a logged‑in user's client on another device, decorate
+`ClientContextInterface`:
+
+```php
+use Setono\Client\Client;
+use Setono\ClientBundle\Context\ClientContextInterface;
+use Symfony\Component\DependencyInjection\Attribute\AsDecorator;
+use Symfony\Component\DependencyInjection\Attribute\AutowireDecorated;
+
+#[AsDecorator(ClientContextInterface::class)]
+final class UserClientContext implements ClientContextInterface
+{
+    public function __construct(#[AutowireDecorated] private readonly ClientContextInterface $decorated)
+    {
+    }
+
+    public function getClient(): Client
+    {
+        // return another client, or the decorated one
+        return $this->decorated->getClient();
+    }
+}
+```
+
+The bundle's `CachedClientContext` decorates the interface with the lowest priority (`-1024`), so it wraps your
+decorator and a request gets one client however often it's asked for, even if your decorator creates a client on every
+call. The cookie then stores the client id of your client. It must be a non‑empty string of at most 255 bytes.
 
 ## Contributing
 
