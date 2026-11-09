@@ -5,23 +5,22 @@ declare(strict_types=1);
 namespace Setono\ClientBundle\EventSubscriber;
 
 use Psr\EventDispatcher\EventDispatcherInterface;
-use Setono\Client\Cookie;
 use Setono\ClientBundle\Context\ClientContextInterface;
-use Setono\ClientBundle\CookieProvider\CookieProviderInterface;
+use Setono\ClientBundle\Cookie\ClientCookieJar;
 use Setono\ClientBundle\Event\PreStoreCookieEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\Cookie as HttpCookie;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
+/**
+ * Stores the client cookie of the current client, unless a listener of PreStoreCookieEvent vetoes it
+ */
 final class StoreCookieSubscriber implements EventSubscriberInterface
 {
     public function __construct(
         private readonly ClientContextInterface $clientContext,
-        private readonly CookieProviderInterface $cookieProvider,
+        private readonly ClientCookieJar $cookieJar,
         private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly string $cookieName,
-        private readonly string $cookieExpiration,
     ) {
     }
 
@@ -45,15 +44,6 @@ final class StoreCookieSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $cookie = $this->cookieProvider->getCookie($event->getRequest());
-
-        if (null === $cookie) {
-            $cookie = new Cookie($this->clientContext->getClient()->id);
-        }
-
-        $event->getResponse()->headers->setCookie(
-            HttpCookie::create($this->cookieName, $cookie->withLastSeenAt(time())->toString(), $this->cookieExpiration)
-                ->withHttpOnly(false), // this allows javascript to read the cookie
-        );
+        $this->cookieJar->write($event->getRequest(), $event->getResponse(), $this->clientContext->getClient());
     }
 }

@@ -105,6 +105,7 @@ final class Kernel extends BaseKernel
         $services
             ->defaults()->autowire()->autoconfigure()
             ->load(__NAMESPACE__ . '\\Controller\\', __DIR__ . '/Controller')->tag('controller.service_arguments')
+            ->load(__NAMESPACE__ . '\\Context\\', __DIR__ . '/Context')
             ->load(__NAMESPACE__ . '\\EventSubscriber\\', __DIR__ . '/EventSubscriber')
         ;
 
@@ -139,6 +140,7 @@ final class Kernel extends BaseKernel
     protected function configureRoutes(RoutingConfigurator $routes): void
     {
         $routes->add('client_id', '/')->controller([ClientController::class, 'id']);
+        $routes->add('no_client', '/no-client')->controller([ClientController::class, 'noClient']);
         $routes->add('metadata_show', '/metadata')->controller([ClientController::class, 'showMetadata']);
         $routes->add('metadata_set', '/metadata/set')->controller([ClientController::class, 'setMetadata']);
         $routes->add('metadata_remove', '/metadata/remove')->controller([ClientController::class, 'removeMetadata']);

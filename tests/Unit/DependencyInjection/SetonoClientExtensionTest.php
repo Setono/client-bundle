@@ -6,8 +6,8 @@ namespace Setono\ClientBundle\Tests\Unit\DependencyInjection;
 
 use Matthias\SymfonyDependencyInjectionTest\PhpUnit\AbstractExtensionTestCase;
 use Setono\ClientBundle\Context\ClientContextInterface;
-use Setono\ClientBundle\Context\DefaultClientContext;
-use Setono\ClientBundle\CookieProvider\RequestBasedCookieProvider;
+use Setono\ClientBundle\Context\CookieBasedClientContext;
+use Setono\ClientBundle\Cookie\ClientCookieJar;
 use Setono\ClientBundle\DependencyInjection\SetonoClientExtension;
 use Setono\ClientBundle\Entity\Metadata;
 use Setono\ClientBundle\EventListener\Doctrine\ConvertToEntityListener;
@@ -60,19 +60,20 @@ final class SetonoClientExtensionTest extends AbstractExtensionTestCase
     {
         $this->load();
 
-        $this->assertContainerBuilderHasService('setono_client.client_context.default', DefaultClientContext::class);
-        $this->assertContainerBuilderHasService('setono_client.cookie_provider.default', RequestBasedCookieProvider::class);
+        $this->assertContainerBuilderHasService('setono_client.client_context.cookie_based', CookieBasedClientContext::class);
+        $this->assertContainerBuilderHasAlias('setono_client.client_context.default', 'setono_client.client_context.cookie_based');
         $this->assertContainerBuilderHasAlias(ClientContextInterface::class, 'setono_client.client_context.default');
+        $this->assertContainerBuilderHasService('setono_client.cookie.client_cookie_jar', ClientCookieJar::class);
     }
 
     /**
      * @test
      */
-    public function after_loading_the_cached_client_context_is_reset_between_requests(): void
+    public function after_loading_the_cached_client_context_wraps_every_other_client_context(): void
     {
         $this->load();
 
-        $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.client_context.cached', 'kernel.reset', ['method' => 'reset']);
+        $this->assertContainerBuilderServiceDecoration('setono_client.client_context.cached', ClientContextInterface::class, null, -1024);
     }
 
     /**
@@ -84,6 +85,7 @@ final class SetonoClientExtensionTest extends AbstractExtensionTestCase
 
         $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.event_subscriber.store_cookie', 'kernel.event_subscriber');
         $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.event_subscriber.store_metadata', 'kernel.event_subscriber');
+        $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.client_context.cached', 'kernel.event_subscriber');
         $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.controller.client_value_resolver', 'controller.argument_value_resolver');
         $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.event_listener_doctrine.convert_to_entity', 'doctrine.event_listener', [
             'event' => 'loadClassMetadata',

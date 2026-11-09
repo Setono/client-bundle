@@ -33,20 +33,23 @@ Branches: `2.x` (the default) is the next major and may break BC; `1.x` is the 1
 
 The core abstraction is `ClientContextInterface::getClient(): Client`. Controllers obtain the current `Setono\Client\Client` either by autowiring `ClientContextInterface`, or — more commonly — by type-hinting `Setono\Client\Client` directly on a controller argument, which `Controller/ClientValueResolver` resolves via the context.
 
-### Decorator chains (the key structural idea)
+### Service wiring (decoration)
 
-Three concerns are each built as a **Symfony service-decoration chain** in `config/services.xml`. Higher `decoration-priority` is applied first and ends up *innermost*; the public alias resolves to the outermost decorator. Understanding the resolution order is essential before changing any service wiring:
+Two concerns are built with **Symfony service decoration** in `config/services.xml`. Higher `decoration-priority` is applied first and ends up *innermost*; the decorated id resolves to the outermost decorator. Understanding the resolution order is essential before changing any service wiring:
 
-- **Client context** — runtime order outermost→innermost: `CachedClientContext` (prio 32) → `CookieBasedClientContext` (prio 64) → `DefaultClientContext`.
-  - `Cached` memoizes the `Client` for the request. It implements `ResetInterface` and is tagged `kernel.reset`, so long-running runtimes (FrankenPHP worker mode, RoadRunner) don't hand one visitor's client to the next request; `tests/Functional/LongRunningProcessTest.php` covers this. Any new service that holds per-request state needs the same, unless it keys the state by the request object like `CachedCookieProvider`.
-  - `CookieBased` reads the cookie; if present, builds `Client(cookieId, metadataProvider->getMetadata(...))`; otherwise delegates.
-  - `Default` returns an anonymous `new Client(null, new ChangeAwareMetadata())`.
-- **Cookie provider** — `CachedCookieProvider` (prio 32, memoizes per `Request` in a `WeakMap` keyed by the request object, so it needs no reset; not `spl_object_hash()`, which PHP hands to a new request once the old one is freed) → `RequestBasedCookieProvider` (parses the cookie off the request). The test kernel keeps its requests alive, so only `CachedCookieProviderTest` can reproduce that handle reuse.
-- **Metadata provider** — `DoctrineOrmBasedMetadataProvider` (prio 64) → `EmptyMetadataProvider` (default). Doctrine loads from DB, falling back to the decorated provider when no row exists.
+- **Client context**: runtime order outermost→innermost: `CachedClientContext` → the application's decorators → `CookieBasedClientContext` (`setono_client.client_context.cookie_based`, aliased by `setono_client.client_context.default`, which the interface alias points to). The current client is the source of truth for the client id; see `docs/adr/0001-the-current-client-is-the-source-of-truth-for-the-client-id.md`.
+  - `CachedClientContext` decorates the **interface alias** `ClientContextInterface` at priority `-1024`, so it wraps every application decorator, whether that decorates the interface (e.g. `#[AsDecorator(ClientContextInterface::class)]`) or `setono_client.client_context.default`. It gives a request one client, even when a decorator creates a client on every call. `tests/Functional/DecoratedClientContextTest.php` covers both styles with such decorators (`tests/Functional/App/Context/QueryParameterClientContext.php` and `HeaderClientContext.php`). It keeps the clients in a `WeakMap` keyed by the main `Request` object, so it needs no `kernel.reset` in long-running runtimes (FrankenPHP worker mode, RoadRunner; `tests/Functional/LongRunningProcessTest.php`). Don't key by `spl_object_hash()`: PHP hands a freed request's handle to the next request. Without a request it passes every call on. Any new service that holds per-request state should key it by the request object the same way.
+  - Injecting `setono_client.client_context.default` skips `CachedClientContext`, which decorates the interface alias, so a request without a cookie would get a new client on every call. Inject the interface. The bundle's own consumers (`StoreCookieSubscriber`, `StoreMetadataSubscriber`, `ClientValueResolver`) do.
+  - `CookieBasedClientContext` reads the client cookie of the main request with `Cookie/ClientCookieJar`. A valid cookie gives `Client(cookieId, metadataProvider->getMetadata(...))`; otherwise it's a new client, `new Client(null, new ChangeAwareMetadata())`. Without a request, every call gets an anonymous client that is never stored.
+  - `CachedClientContext` is also a `kernel.terminate` subscriber. Symfony pops the request before it dispatches `kernel.terminate`, so a listener at priority 2048 keeps the request being terminated, through a `WeakReference`, and one at -2048 drops it. `CachedClientContext` uses that request as the key while the stack is empty, so terminate listeners get the request's current client (`tests/Functional/KernelTerminateTest.php`). They get it from the cache: `StoreMetadataSubscriber` asks for the current client on `kernel.finish_request` of every main request, before the pop. `CookieBasedClientContext` only reads the `RequestStack`, so a cache miss during terminate would give an anonymous client.
+  - Because of that subscriber tag, don't decorate `setono_client.client_context.cached` itself: Symfony moves a decorated service's tags to its decorator, so the container fails to compile ("must implement EventSubscriberInterface"). Decorate the interface or `setono_client.client_context.default`.
+- **Metadata provider**: `DoctrineOrmBasedMetadataProvider` (prio 64) → `EmptyMetadataProvider` (default). Doctrine loads from DB, falling back to the decorated provider when no row exists.
+
+`Cookie/ClientCookieJar` (`@internal`) owns everything about the client cookie: its name, format, validation (a non-empty client id of at most 255 bytes) and expiry. `read()` returns null for a missing or invalid cookie. `write()` stores the current client's id, keeps `firstSeenAt` only when the request's cookie holds the same id (otherwise fresh timestamps), and throws a `LogicException` for a client id that `read()` would reject.
 
 ### Request lifecycle
 
-- `EventSubscriber/StoreCookieSubscriber` (on `kernel.response`): dispatches `Event/PreStoreCookieEvent` (an app can set `$store = false` to veto), then writes/refreshes the cookie with an updated `lastSeenAt`. The cookie is set `HttpOnly(false)` on purpose so client-side JS can read it.
+- `EventSubscriber/StoreCookieSubscriber` (on `kernel.response`): dispatches `Event/PreStoreCookieEvent` (an app can set `$store = false` to veto), then writes the client cookie of the current client with `ClientCookieJar::write()`. The cookie is set `HttpOnly(false)` on purpose so client-side JS can read it.
 - `EventSubscriber/StoreMetadataSubscriber` (on `kernel.finish_request`): calls the metadata persister for the current client.
 
 ### Lazy metadata (why writes are cheap)
@@ -72,7 +75,7 @@ setono_client:
 ## Conventions
 
 - Strict types everywhere (`declare(strict_types=1)`); concrete classes are `final`, except the metadata/entity classes (`ChangeAwareMetadata`, `LazyChangeAwareMetadata`, `Entity\Metadata`) which are intentionally extensible.
-- New services go in `config/services.xml` using the `setono_client.<concern>.<variant>` id scheme, with a `setono_client.<concern>.default` alias and an interface alias for autowiring. To insert behavior into a chain, add a decorator with an appropriate `decoration-priority` rather than editing existing classes.
+- New services go in `config/services.xml`. A service behind a public interface uses the `setono_client.<concern>.<variant>` id scheme, with a `setono_client.<concern>.default` alias and an interface alias for autowiring. Any other service (a subscriber, the value resolver, an `@internal` class) is `setono_client.<namespace>.<name>`, like `setono_client.event_subscriber.store_cookie` and `setono_client.cookie.client_cookie_jar`, without aliases. To change a service's behavior, decorate it rather than editing existing classes, and pick a `decoration-priority` only where the order among decorators matters (the metadata provider). To change the current client, decorate `ClientContextInterface`; `CachedClientContext` stays outermost on its own.
 - Tests use `matthiasnoback/symfony-dependency-injection-test` (e.g. `AbstractExtensionTestCase`), `matthiasnoback/symfony-config-test` (`ConfigurationTestCaseTrait`) and Prophecy (`ProphecyTrait`), with the `@test` annotation and snake_case method-name style. Keep the suite at 100% MSI — when adding logic, add a test that kills the corresponding mutant.
 
 ## Agent skills
@@ -89,4 +92,4 @@ The five default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready
 
 ### Domain docs
 
-Single-context: one `GLOSSARY.md` and one `docs/adr/` at the repo root. Neither exists yet; they get created as needed. See `docs/agents/domain.md`.
+Single-context: one `GLOSSARY.md` and one `docs/adr/` at the repo root. See `docs/agents/domain.md`.

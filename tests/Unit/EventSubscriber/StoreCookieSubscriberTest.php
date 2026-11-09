@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace Setono\ClientBundle\Tests\Unit\EventSubscriber;
 
 use PHPUnit\Framework\TestCase;
-use Prophecy\Argument;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Setono\Client\Client;
 use Setono\Client\Cookie;
 use Setono\ClientBundle\Context\ClientContextInterface;
-use Setono\ClientBundle\CookieProvider\CookieProviderInterface;
+use Setono\ClientBundle\Cookie\ClientCookieJar;
 use Setono\ClientBundle\Event\PreStoreCookieEvent;
 use Setono\ClientBundle\EventSubscriber\StoreCookieSubscriber;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -38,94 +37,19 @@ final class StoreCookieSubscriberTest extends TestCase
     /**
      * @test
      */
-    public function it_stores_a_new_cookie_when_none_exists(): void
+    public function it_stores_the_client_cookie_of_the_current_client(): void
     {
         $clientContext = $this->prophesize(ClientContextInterface::class);
-        $clientContext->getClient()->willReturn(new Client('client-id'));
+        $clientContext->getClient()->willReturn(new Client('current-client-id'));
 
-        $cookieProvider = $this->prophesize(CookieProviderInterface::class);
-        $cookieProvider->getCookie(Argument::type(Request::class))->willReturn(null);
-
+        $request = new Request([], [], [], [self::COOKIE_NAME => (new Cookie('cookie-client-id'))->toString()]);
         $response = new Response();
-        $this->createSubscriber($clientContext->reveal(), $cookieProvider->reveal())->store(
-            $this->createResponseEvent(new Request(), $response),
-        );
+        $this->createSubscriber($clientContext->reveal())->store($this->createResponseEvent($request, $response));
 
         $cookies = $response->headers->getCookies();
         self::assertCount(1, $cookies);
         self::assertSame(self::COOKIE_NAME, $cookies[0]->getName());
-        self::assertFalse($cookies[0]->isHttpOnly());
-        self::assertSame('client-id', Cookie::fromString((string) $cookies[0]->getValue())->clientId);
-    }
-
-    /**
-     * @test
-     */
-    public function it_reuses_the_client_id_from_an_existing_cookie(): void
-    {
-        $clientContext = $this->prophesize(ClientContextInterface::class);
-        $clientContext->getClient()->shouldNotBeCalled();
-
-        $cookieProvider = $this->prophesize(CookieProviderInterface::class);
-        $cookieProvider->getCookie(Argument::type(Request::class))->willReturn(new Cookie('existing-id'));
-
-        $response = new Response();
-        $this->createSubscriber($clientContext->reveal(), $cookieProvider->reveal())->store(
-            $this->createResponseEvent(new Request(), $response),
-        );
-
-        $cookies = $response->headers->getCookies();
-        self::assertCount(1, $cookies);
-        self::assertSame('existing-id', Cookie::fromString((string) $cookies[0]->getValue())->clientId);
-    }
-
-    /**
-     * @test
-     */
-    public function it_refreshes_the_last_seen_timestamp_and_keeps_the_first_seen_timestamp(): void
-    {
-        $clientContext = $this->prophesize(ClientContextInterface::class);
-
-        $cookieProvider = $this->prophesize(CookieProviderInterface::class);
-        $cookieProvider->getCookie(Argument::type(Request::class))->willReturn(new Cookie('existing-id', 2, 1_000, 2_000));
-
-        $before = time();
-        $response = new Response();
-        $this->createSubscriber($clientContext->reveal(), $cookieProvider->reveal())->store(
-            $this->createResponseEvent(new Request(), $response),
-        );
-
-        $cookie = Cookie::fromString((string) $response->headers->getCookies()[0]->getValue());
-        self::assertSame(1_000, $cookie->firstSeenAt);
-        self::assertGreaterThanOrEqual($before, $cookie->lastSeenAt);
-        self::assertLessThanOrEqual(time(), $cookie->lastSeenAt);
-    }
-
-    /**
-     * @test
-     */
-    public function it_uses_the_configured_cookie_name_and_expiration(): void
-    {
-        $clientContext = $this->prophesize(ClientContextInterface::class);
-        $clientContext->getClient()->willReturn(new Client('client-id'));
-
-        $cookieProvider = $this->prophesize(CookieProviderInterface::class);
-        $cookieProvider->getCookie(Argument::type(Request::class))->willReturn(null);
-
-        $before = time();
-        $response = new Response();
-        $this->createSubscriber(
-            $clientContext->reveal(),
-            $cookieProvider->reveal(),
-            cookieName: 'custom_name',
-            cookieExpiration: '+30 days',
-        )->store($this->createResponseEvent(new Request(), $response));
-
-        $cookies = $response->headers->getCookies();
-        self::assertCount(1, $cookies);
-        self::assertSame('custom_name', $cookies[0]->getName());
-        self::assertGreaterThanOrEqual(strtotime('+30 days', $before), $cookies[0]->getExpiresTime());
-        self::assertLessThanOrEqual(strtotime('+30 days'), $cookies[0]->getExpiresTime());
+        self::assertSame('current-client-id', Cookie::fromString((string) $cookies[0]->getValue())->clientId);
     }
 
     /**
@@ -134,11 +58,10 @@ final class StoreCookieSubscriberTest extends TestCase
     public function it_does_not_store_a_cookie_for_sub_requests(): void
     {
         $clientContext = $this->prophesize(ClientContextInterface::class);
-        $cookieProvider = $this->prophesize(CookieProviderInterface::class);
-        $cookieProvider->getCookie(Argument::cetera())->shouldNotBeCalled();
+        $clientContext->getClient()->shouldNotBeCalled();
 
         $response = new Response();
-        $this->createSubscriber($clientContext->reveal(), $cookieProvider->reveal())->store(
+        $this->createSubscriber($clientContext->reveal())->store(
             $this->createResponseEvent(new Request(), $response, HttpKernelInterface::SUB_REQUEST),
         );
 
@@ -151,30 +74,29 @@ final class StoreCookieSubscriberTest extends TestCase
     public function it_does_not_store_a_cookie_when_the_pre_store_event_vetoes_it(): void
     {
         $clientContext = $this->prophesize(ClientContextInterface::class);
-        $cookieProvider = $this->prophesize(CookieProviderInterface::class);
-        $cookieProvider->getCookie(Argument::cetera())->shouldNotBeCalled();
+        $clientContext->getClient()->shouldNotBeCalled();
+
+        $request = new Request();
+        $response = new Response();
 
         $eventDispatcher = new EventDispatcher();
-        $eventDispatcher->addListener(PreStoreCookieEvent::class, static function (PreStoreCookieEvent $event): void {
+        $eventDispatcher->addListener(PreStoreCookieEvent::class, static function (PreStoreCookieEvent $event) use ($request, $response): void {
+            self::assertSame($request, $event->request);
+            self::assertSame($response, $event->response);
+
             $event->store = false;
         });
 
-        $response = new Response();
-        $this->createSubscriber($clientContext->reveal(), $cookieProvider->reveal(), $eventDispatcher)->store(
-            $this->createResponseEvent(new Request(), $response),
-        );
+        $this->createSubscriber($clientContext->reveal(), $eventDispatcher)->store($this->createResponseEvent($request, $response));
 
         self::assertCount(0, $response->headers->getCookies());
     }
 
     private function createSubscriber(
         ClientContextInterface $clientContext,
-        CookieProviderInterface $cookieProvider,
         EventDispatcherInterface $eventDispatcher = new EventDispatcher(),
-        string $cookieName = self::COOKIE_NAME,
-        string $cookieExpiration = '+365 days',
     ): StoreCookieSubscriber {
-        return new StoreCookieSubscriber($clientContext, $cookieProvider, $eventDispatcher, $cookieName, $cookieExpiration);
+        return new StoreCookieSubscriber($clientContext, new ClientCookieJar(self::COOKIE_NAME, '+365 days'), $eventDispatcher);
     }
 
     private function createResponseEvent(

@@ -32,6 +32,14 @@ final class ClientController
     }
 
     /**
+     * Doesn't use the client
+     */
+    public function noClient(): Response
+    {
+        return new Response();
+    }
+
+    /**
      * Uses the client, but not its metadata
      */
     public function id(): Response
