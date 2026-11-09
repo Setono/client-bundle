@@ -8,15 +8,16 @@ use Setono\Client\Cookie;
 use Symfony\Component\BrowserKit\Cookie as BrowserCookie;
 
 /**
- * The test application decorates the client context with RequestedClientContext, which gives a request the client
- * that its "client_id" query parameter names
+ * The test application has two decorators that create a client on every call: QueryParameterClientContext decorates
+ * the interface and reads the "client_id" query parameter, and HeaderClientContext decorates
+ * setono_client.client_context.default and reads the "X-Client-Id" header
  */
 final class DecoratedClientContextTest extends FunctionalTestCase
 {
     /**
      * @test
      */
-    public function it_gives_the_request_the_client_of_the_decorator(): void
+    public function it_lets_a_decorator_of_the_interface_choose_the_current_client(): void
     {
         $this->browser->request('GET', '/?client_id=decorated-client-id');
 
@@ -27,7 +28,18 @@ final class DecoratedClientContextTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function it_stores_the_client_id_of_the_decorator_with_fresh_timestamps_in_place_of_the_cookie(): void
+    public function it_lets_a_decorator_of_the_service_id_choose_the_current_client(): void
+    {
+        $this->browser->request('GET', '/', server: ['HTTP_X_CLIENT_ID' => 'decorated-client-id']);
+
+        self::assertSame('decorated-client-id', $this->browser->getResponse()->getContent());
+        self::assertSame('decorated-client-id', $this->getClientId());
+    }
+
+    /**
+     * @test
+     */
+    public function it_rewrites_the_client_cookie_with_fresh_timestamps_when_the_current_client_differs(): void
     {
         $this->browser->getCookieJar()->set(new BrowserCookie(self::COOKIE_NAME, (new Cookie('cookie-client-id', 2, 1_000, 2_000))->toString(), null, '/', 'localhost'));
 
@@ -42,7 +54,7 @@ final class DecoratedClientContextTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function it_stores_the_metadata_set_on_the_client_of_a_decorator_that_creates_a_client_on_every_call(): void
+    public function it_stores_the_metadata_of_the_current_client_of_a_decorator_of_the_interface(): void
     {
         $this->browser->request('GET', '/metadata/set?key=foo&value=bar&client_id=decorated-client-id');
 
@@ -52,7 +64,17 @@ final class DecoratedClientContextTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function it_refuses_to_store_a_client_id_that_the_cookie_cannot_hold(): void
+    public function it_stores_the_metadata_of_the_current_client_of_a_decorator_of_the_service_id(): void
+    {
+        $this->browser->request('GET', '/metadata/set?key=foo&value=bar', server: ['HTTP_X_CLIENT_ID' => 'decorated-client-id']);
+
+        self::assertSame(['foo' => 'bar'], self::fetchStoredMetadata('decorated-client-id'));
+    }
+
+    /**
+     * @test
+     */
+    public function it_refuses_to_store_a_current_client_id_that_is_not_valid(): void
     {
         $this->expectException(\LogicException::class);
         $this->expectExceptionMessage('The client id must be a non-empty string');

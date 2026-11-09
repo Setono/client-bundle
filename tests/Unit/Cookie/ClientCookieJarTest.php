@@ -91,7 +91,7 @@ final class ClientCookieJarTest extends TestCase
     /**
      * @test
      */
-    public function it_reads_nothing_when_the_client_id_is_longer_than_255_characters(): void
+    public function it_reads_nothing_when_the_client_id_is_longer_than_255_bytes(): void
     {
         self::assertNull(self::createJar()->read(self::createRequest((new Cookie(str_repeat('a', 256)))->toString())));
     }
@@ -99,7 +99,7 @@ final class ClientCookieJarTest extends TestCase
     /**
      * @test
      */
-    public function it_reads_a_client_id_of_255_characters(): void
+    public function it_reads_a_client_id_of_255_bytes(): void
     {
         $clientId = str_repeat('a', 255);
 
@@ -170,7 +170,7 @@ final class ClientCookieJarTest extends TestCase
     /**
      * @test
      */
-    public function it_writes_the_client_id_of_the_client_and_starts_over_the_timestamps_when_it_differs_from_the_cookie(): void
+    public function it_writes_the_current_client_id_with_fresh_timestamps_when_it_differs_from_the_cookie(): void
     {
         $request = self::createRequest((new Cookie('cookie-client-id', 2, 1_000, 2_000))->toString());
 
@@ -186,7 +186,7 @@ final class ClientCookieJarTest extends TestCase
     /**
      * @test
      */
-    public function it_writes_a_client_id_of_255_characters(): void
+    public function it_writes_a_client_id_of_255_bytes(): void
     {
         $clientId = str_repeat('a', 255);
 
@@ -210,7 +210,7 @@ final class ClientCookieJarTest extends TestCase
     /**
      * @test
      */
-    public function it_refuses_to_write_a_client_id_longer_than_255_characters(): void
+    public function it_refuses_to_write_a_client_id_longer_than_255_bytes(): void
     {
         $this->expectException(\LogicException::class);
         $this->expectExceptionMessage('client id of 256 bytes');

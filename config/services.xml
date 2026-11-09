@@ -6,27 +6,38 @@
         <!-- Client Contexts -->
         <service id="Setono\ClientBundle\Context\ClientContextInterface" alias="setono_client.client_context.default"/>
 
-        <service id="setono_client.client_context.default"
-                 class="Setono\ClientBundle\Context\ClientContext">
-            <argument type="service" id="request_stack"/>
-            <argument type="service" id="setono_client.client_cookie_jar"/>
+        <service id="setono_client.client_context.default" alias="setono_client.client_context.cookie_based"/>
+
+        <service id="setono_client.client_context.cookie_based"
+                 class="Setono\ClientBundle\Context\CookieBasedClientContext">
+            <argument type="service" id="setono_client.request.main_request_provider"/>
+            <argument type="service" id="setono_client.cookie.client_cookie_jar"/>
             <argument type="service" id="setono_client.metadata_provider.default"/>
         </service>
 
         <!-- Decorates the interface with the lowest priority, so it also wraps the decorators of the application,
-             whether they decorate the interface or setono_client.client_context.default -->
+             whether they decorate the interface or setono_client.client_context.default. Inject the interface:
+             setono_client.client_context.default doesn't include it -->
         <service id="setono_client.client_context.cached"
                  class="Setono\ClientBundle\Context\CachedClientContext"
                  decorates="Setono\ClientBundle\Context\ClientContextInterface" decoration-priority="-1024">
             <argument type="service" id="setono_client.client_context.cached.inner"/>
-            <argument type="service" id="request_stack"/>
+            <argument type="service" id="setono_client.request.main_request_provider"/>
         </service>
 
         <!-- Cookie -->
-        <service id="setono_client.client_cookie_jar"
+        <service id="setono_client.cookie.client_cookie_jar"
                  class="Setono\ClientBundle\Cookie\ClientCookieJar">
             <argument>%setono_client.cookie.name%</argument>
             <argument>%setono_client.cookie.expiration%</argument>
+        </service>
+
+        <!-- Request -->
+        <service id="setono_client.request.main_request_provider"
+                 class="Setono\ClientBundle\Request\MainRequestProvider">
+            <argument type="service" id="request_stack"/>
+
+            <tag name="kernel.event_subscriber"/>
         </service>
 
         <!-- Controller related -->
@@ -47,7 +58,7 @@
         <service id="setono_client.event_subscriber.store_cookie"
                  class="Setono\ClientBundle\EventSubscriber\StoreCookieSubscriber">
             <argument type="service" id="Setono\ClientBundle\Context\ClientContextInterface"/>
-            <argument type="service" id="setono_client.client_cookie_jar"/>
+            <argument type="service" id="setono_client.cookie.client_cookie_jar"/>
             <argument type="service" id="event_dispatcher"/>
 
             <tag name="kernel.event_subscriber"/>

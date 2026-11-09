@@ -6,7 +6,6 @@ namespace Setono\ClientBundle\Cookie;
 
 use Setono\Client\Client;
 use Setono\Client\Cookie;
-use Setono\ClientBundle\Context\ClientContextInterface;
 use Symfony\Component\HttpFoundation\Cookie as HttpCookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,7 +26,7 @@ final class ClientCookieJar
     }
 
     /**
-     * Returns the client cookie of the request, or null if the request has none, or one this jar can't use
+     * Returns the client cookie of the request, or null if the request has no valid client cookie
      */
     public function read(Request $request): ?Cookie
     {
@@ -42,23 +41,22 @@ final class ClientCookieJar
             return null;
         }
 
-        return self::isUsable($cookie->clientId) ? $cookie : null;
+        return self::isValid($cookie->clientId) ? $cookie : null;
     }
 
     /**
      * Sets the client cookie of the given client on the response. When the request's client cookie holds the same
      * client id, the first seen timestamp carries over. Otherwise, the client id is new to this cookie, and so are its timestamps
      *
-     * @throws \LogicException if the client id is one that read() would reject on the next request
+     * @throws \LogicException if the client id isn't valid, because read() would reject it on the next request
      */
     public function write(Request $request, Response $response, Client $client): void
     {
-        if (!self::isUsable($client->id)) {
+        if (!self::isValid($client->id)) {
             throw new \LogicException(sprintf(
-                'The client id must be a non-empty string of at most %d bytes to be stored in the client cookie, but the current client has a client id of %d bytes. Check the services that decorate %s',
+                'The client id must be a non-empty string of at most %d bytes to be stored in the client cookie, but the current client has a client id of %d bytes. Check the services that decorate the client context (ClientContextInterface)',
                 self::MAX_CLIENT_ID_LENGTH,
                 strlen($client->id),
-                ClientContextInterface::class,
             ));
         }
 
@@ -74,9 +72,10 @@ final class ClientCookieJar
     }
 
     /**
-     * All clients with an empty client id would share one client, and the database column holds 255 characters
+     * A valid client id isn't empty, because all clients with an empty client id would share one client. It's at most
+     * 255 bytes, so it fits the database column, which holds 255 characters
      */
-    private static function isUsable(string $clientId): bool
+    private static function isValid(string $clientId): bool
     {
         return '' !== $clientId && strlen($clientId) <= self::MAX_CLIENT_ID_LENGTH;
     }

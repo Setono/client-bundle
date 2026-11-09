@@ -12,12 +12,12 @@ use Symfony\Component\DependencyInjection\Attribute\AutowireDecorated;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
- * Like an application that recognizes a client by other means, e.g. by a logged-in user, this gives the request
- * the client that the "client_id" query parameter names. It creates a new client on every call, like a decorator
- * that doesn't keep the client
+ * Decorates the interface. Like an application that recognizes a client by other means, e.g. by a logged-in user,
+ * it makes the client that the "client_id" query parameter names the current client. It creates a client on every
+ * call, like a decorator that doesn't keep the client
  */
 #[AsDecorator(ClientContextInterface::class)]
-final class RequestedClientContext implements ClientContextInterface
+final class QueryParameterClientContext implements ClientContextInterface
 {
     public function __construct(
         #[AutowireDecorated]

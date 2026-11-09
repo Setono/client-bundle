@@ -109,8 +109,9 @@ final class SomeService
 }
 ```
 
-A request gets one client, however often you ask for it. Outside a request (console commands, workers) there is no
-visitor to recognize, so every call returns an *anonymous* client with a new client id that is never stored.
+A request gets one client, however often you ask for it, also in `kernel.terminate` listeners that run after the
+response is sent. Outside a request (console commands, workers) there is no visitor to recognize, so every call returns
+an *anonymous* client of its own, which is never stored.
 
 ### Read and write metadata
 
@@ -170,8 +171,8 @@ final class GoogleClickIdSubscriber implements EventSubscriberInterface
 ### Read the cookie in JavaScript
 
 The cookie is intentionally **not** `HttpOnly`, so you can read it from JavaScript (e.g. to send the client id to a
-third‑party tag). Its value is `<version>.<first seen>.<last seen>.<client id>`, with the timestamps as unix timestamps,
-e.g. `2.1700000000.1700086400.0190c3a2-...`.
+third‑party tag). Its value is a `Setono\Client\Cookie` from [setono/client](https://github.com/Setono/client) as a
+string; that class defines the format.
 
 ### Skip storing the cookie (consent)
 
@@ -226,9 +227,9 @@ setono_client:
 
 ## How it works
 
-- **Current client** — `ClientContext` recognizes the client by the cookie of the main request. A request without a
-  valid cookie gets a *new client*, with a new client id. `CachedClientContext` wraps the client context, including
-  your decorators, and gives each request one client.
+- **Current client** — `CookieBasedClientContext` recognizes the client by the cookie of the main request. A request
+  without a valid cookie gets a *new client*, with a new client id. `CachedClientContext` wraps the client context,
+  including your decorators, and gives each request one client, until its `kernel.terminate` listeners are done.
 - **Cookie** — on each main response, `StoreCookieSubscriber` writes the cookie of the current client and bumps
   `lastSeenAt`. The cookie always holds the client id of the current client: when that differs from the id in the
   request's cookie (e.g. because a decorator chose another client), the cookie gets the new id and fresh timestamps.
@@ -273,9 +274,13 @@ final class UserClientContext implements ClientContextInterface
 }
 ```
 
-The bundle's `CachedClientContext` decorates the interface with the lowest priority (`-1024`), so it wraps your
-decorator and a request gets one client however often it's asked for, even if your decorator creates a client on every
-call. The cookie then stores the client id of your client. It must be a non‑empty string of at most 255 bytes.
+Decorating `setono_client.client_context.default` works too. The bundle's `CachedClientContext` decorates the interface
+with the lowest priority (`-1024`), so it wraps your decorator and a request gets one client however often it's asked
+for, even if your decorator creates a client on every call. The cookie then stores the client id of your client. It must
+be a non‑empty string of at most 255 bytes.
+
+Inject `ClientContextInterface`, not `setono_client.client_context.default`: that service id doesn't include
+`CachedClientContext`.
 
 ## Contributing
 

@@ -140,6 +140,7 @@ final class Kernel extends BaseKernel
     protected function configureRoutes(RoutingConfigurator $routes): void
     {
         $routes->add('client_id', '/')->controller([ClientController::class, 'id']);
+        $routes->add('no_client', '/no-client')->controller([ClientController::class, 'noClient']);
         $routes->add('metadata_show', '/metadata')->controller([ClientController::class, 'showMetadata']);
         $routes->add('metadata_set', '/metadata/set')->controller([ClientController::class, 'setMetadata']);
         $routes->add('metadata_remove', '/metadata/remove')->controller([ClientController::class, 'removeMetadata']);
