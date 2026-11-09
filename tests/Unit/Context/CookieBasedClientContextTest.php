@@ -14,7 +14,6 @@ use Setono\ClientBundle\Client\ChangeAwareMetadata;
 use Setono\ClientBundle\Context\CookieBasedClientContext;
 use Setono\ClientBundle\Cookie\ClientCookieJar;
 use Setono\ClientBundle\MetadataProvider\MetadataProviderInterface;
-use Setono\ClientBundle\Request\MainRequestProvider;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Uid\Uuid;
@@ -110,7 +109,7 @@ final class CookieBasedClientContextTest extends TestCase
         }
 
         return new CookieBasedClientContext(
-            new MainRequestProvider($requestStack),
+            $requestStack,
             new ClientCookieJar(self::COOKIE_NAME, '+365 days'),
             $metadataProvider->reveal(),
         );

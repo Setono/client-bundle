@@ -280,7 +280,8 @@ for, even if your decorator creates a client on every call. The cookie then stor
 be a non‑empty string of at most 255 bytes.
 
 Inject `ClientContextInterface`, not `setono_client.client_context.default`: that service id doesn't include
-`CachedClientContext`.
+`CachedClientContext`. Don't decorate `setono_client.client_context.cached` itself. It also listens to
+`kernel.terminate`, and Symfony would move that listener to your decorator.
 
 ## Contributing
 

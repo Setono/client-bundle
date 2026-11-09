@@ -11,7 +11,6 @@ use Setono\ClientBundle\Cookie\ClientCookieJar;
 use Setono\ClientBundle\DependencyInjection\SetonoClientExtension;
 use Setono\ClientBundle\Entity\Metadata;
 use Setono\ClientBundle\EventListener\Doctrine\ConvertToEntityListener;
-use Setono\ClientBundle\Request\MainRequestProvider;
 use Setono\ClientBundle\Tests\Unit\DependencyInjection\Fixture\CustomMetadata;
 use Setono\ClientBundle\Tests\Unit\DependencyInjection\Fixture\InterfaceOnlyMetadata;
 
@@ -65,7 +64,6 @@ final class SetonoClientExtensionTest extends AbstractExtensionTestCase
         $this->assertContainerBuilderHasAlias('setono_client.client_context.default', 'setono_client.client_context.cookie_based');
         $this->assertContainerBuilderHasAlias(ClientContextInterface::class, 'setono_client.client_context.default');
         $this->assertContainerBuilderHasService('setono_client.cookie.client_cookie_jar', ClientCookieJar::class);
-        $this->assertContainerBuilderHasService('setono_client.request.main_request_provider', MainRequestProvider::class);
     }
 
     /**
@@ -87,7 +85,7 @@ final class SetonoClientExtensionTest extends AbstractExtensionTestCase
 
         $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.event_subscriber.store_cookie', 'kernel.event_subscriber');
         $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.event_subscriber.store_metadata', 'kernel.event_subscriber');
-        $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.request.main_request_provider', 'kernel.event_subscriber');
+        $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.client_context.cached', 'kernel.event_subscriber');
         $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.controller.client_value_resolver', 'controller.argument_value_resolver');
         $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.event_listener_doctrine.convert_to_entity', 'doctrine.event_listener', [
             'event' => 'loadClassMetadata',

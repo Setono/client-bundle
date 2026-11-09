@@ -8,7 +8,7 @@ use Setono\Client\Client;
 use Setono\ClientBundle\Client\ChangeAwareMetadata;
 use Setono\ClientBundle\Cookie\ClientCookieJar;
 use Setono\ClientBundle\MetadataProvider\MetadataProviderInterface;
-use Setono\ClientBundle\Request\MainRequestProvider;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Recognizes the client by the client cookie of the main request. A request without a valid client cookie gets a new
@@ -17,7 +17,7 @@ use Setono\ClientBundle\Request\MainRequestProvider;
 final class CookieBasedClientContext implements ClientContextInterface
 {
     public function __construct(
-        private readonly MainRequestProvider $mainRequestProvider,
+        private readonly RequestStack $requestStack,
         private readonly ClientCookieJar $cookieJar,
         private readonly MetadataProviderInterface $metadataProvider,
     ) {
@@ -25,7 +25,7 @@ final class CookieBasedClientContext implements ClientContextInterface
 
     public function getClient(): Client
     {
-        $request = $this->mainRequestProvider->getMainRequest();
+        $request = $this->requestStack->getMainRequest();
         $cookie = null === $request ? null : $this->cookieJar->read($request);
 
         if (null === $cookie) {

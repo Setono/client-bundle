@@ -30,7 +30,7 @@ The current client is now the source of truth for the client id, and the client 
 
 - `setono_client.client_context.default` is now an alias of `setono_client.client_context.cookie_based`, and it no longer includes `CachedClientContext`, which decorates `ClientContextInterface` instead. Inject `ClientContextInterface`: a service that injects `setono_client.client_context.default` would give a request without a client cookie a new client on every call, and none of them would match the client cookie.
 - `CookieBasedClientContext` no longer decorates another client context.
-- `CachedClientContext` no longer implements `Symfony\Contracts\Service\ResetInterface`, and it is no longer tagged `kernel.reset`. It keeps the client per request instead.
+- `CachedClientContext` no longer implements `Symfony\Contracts\Service\ResetInterface`, and it is no longer tagged `kernel.reset`. It keeps the client per request instead, and listens to `kernel.terminate` to keep it for that event's listeners.
 - The constructors of `CookieBasedClientContext`, `CachedClientContext` and `StoreCookieSubscriber` changed. The bundle's service definitions wire them.
 - The client cookie always holds the client id of the current client, i.e. what `ClientContextInterface::getClient()` returns, decorators included. In 1.x, a request with a client cookie kept the cookie's client id. When the ids differ, the client cookie gets the current client's id with fresh first and last seen timestamps.
 - Storing the client cookie throws a `LogicException` when the current client's id is empty or longer than 255 bytes, because the next request couldn't read it back.
@@ -38,4 +38,4 @@ The current client is now the source of truth for the client id, and the client 
 
 ### Decorating the client context
 
-Decorate `Setono\ClientBundle\Context\ClientContextInterface`, e.g. with `#[AsDecorator(ClientContextInterface::class)]`, or `setono_client.client_context.default`. You no longer need to pick a priority or implement `ResetInterface`. `CachedClientContext` decorates the interface with priority `-1024`, so it wraps your decorator, and a request gets one client even if your decorator creates a client on every call.
+Decorate `Setono\ClientBundle\Context\ClientContextInterface`, e.g. with `#[AsDecorator(ClientContextInterface::class)]`, or `setono_client.client_context.default`. You no longer need to pick a priority or implement `ResetInterface`. Don't decorate `setono_client.client_context.cached` itself, because Symfony would move its `kernel.terminate` listener to your decorator. `CachedClientContext` decorates the interface with priority `-1024`, so it wraps your decorator, and a request gets one client even if your decorator creates a client on every call.

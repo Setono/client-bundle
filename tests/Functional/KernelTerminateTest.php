@@ -27,11 +27,12 @@ final class KernelTerminateTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function it_recognizes_the_client_on_kernel_terminate_when_the_request_did_not_use_it(): void
+    public function it_gives_the_listeners_of_kernel_terminate_the_current_client_when_the_application_did_not_use_it(): void
     {
         $this->browser->getCookieJar()->set(new BrowserCookie(self::COOKIE_NAME, (new Cookie('client-id'))->toString(), null, '/', 'localhost'));
 
-        // The route doesn't use the client, and the veto keeps the cookie subscriber from using it
+        // Neither the route nor the vetoed cookie subscriber uses the client, but StoreMetadataSubscriber gets it on
+        // kernel.finish_request of every main request, while the request is still on the request stack
         $this->browser->request('GET', '/no-client?skip_cookie=1&record_client_on_terminate=1');
 
         self::assertSame('client-id', self::getRecordedClientId());
