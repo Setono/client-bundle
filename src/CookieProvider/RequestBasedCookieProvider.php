@@ -31,8 +31,9 @@ final class RequestBasedCookieProvider implements CookieProviderInterface
             return null;
         }
 
-        // All visitors with an empty client id would share one client, and the database column holds 255 characters
-        if ('' === $cookie->clientId || strlen($cookie->clientId) > self::MAX_CLIENT_ID_LENGTH) {
+        // All visitors with an empty client id would share one client, and the database column holds 255 characters.
+        // PHP url-decodes cookie values, so a cookie can also hold bytes that aren't UTF-8, which the database rejects
+        if ('' === $cookie->clientId || strlen($cookie->clientId) > self::MAX_CLIENT_ID_LENGTH || 1 !== preg_match('//u', $cookie->clientId)) {
             return null;
         }
 
