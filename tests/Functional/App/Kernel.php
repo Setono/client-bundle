@@ -10,6 +10,7 @@ use Doctrine\DBAL\Connection;
 use Setono\ClientBundle\SetonoClientBundle;
 use Setono\ClientBundle\Tests\Functional\App\Controller\ClientController;
 use Setono\ClientBundle\Tests\Functional\App\Entity\CustomMetadata;
+use Setono\ClientBundle\Tests\Functional\App\Entity\InterfaceOnlyMetadata;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -25,6 +26,11 @@ final class Kernel extends BaseKernel
      * In this environment the application stores the metadata in its own entity
      */
     public const ENVIRONMENT_CUSTOM_METADATA = 'custom_metadata';
+
+    /**
+     * In this environment the application stores the metadata in its own entity, which doesn't extend the bundle's
+     */
+    public const ENVIRONMENT_INTERFACE_ONLY_METADATA = 'interface_only_metadata';
 
     public function registerBundles(): iterable
     {
@@ -109,18 +115,25 @@ final class Kernel extends BaseKernel
             ->load(__NAMESPACE__ . '\\EventSubscriber\\', __DIR__ . '/EventSubscriber')
         ;
 
-        if (self::ENVIRONMENT_CUSTOM_METADATA === $this->environment) {
+        $metadataClass = match ($this->environment) {
+            self::ENVIRONMENT_CUSTOM_METADATA => CustomMetadata::class,
+            self::ENVIRONMENT_INTERFACE_ONLY_METADATA => InterfaceOnlyMetadata::class,
+            default => null,
+        };
+
+        if (null !== $metadataClass) {
             $container->extension('setono_client', [
-                'metadata_class' => CustomMetadata::class,
+                'metadata_class' => $metadataClass,
             ]);
 
+            // Each of these environments maps only its own entity
             $container->extension('doctrine', [
                 'orm' => [
                     'mappings' => [
                         'App' => [
                             'type' => 'xml',
                             'is_bundle' => false,
-                            'dir' => __DIR__ . '/config/doctrine',
+                            'dir' => __DIR__ . '/config/doctrine/' . $this->environment,
                             'prefix' => __NAMESPACE__ . '\\Entity',
                         ],
                     ],
@@ -128,10 +141,10 @@ final class Kernel extends BaseKernel
             ]);
 
             // DAMA DoctrineTestBundle shares its static connection and its static metadata cache between kernels by the
-            // names of the connection and the cache, which are the same in both environments. But this environment has
-            // its own database and maps the bundle's Metadata as a mapped superclass
+            // names of the connection and the cache, which are the same in every environment. But each of these environments
+            // has its own database and maps the bundle's Metadata as a mapped superclass
             $container->extension('dama_doctrine_test', [
-                'connection_keys' => ['default' => self::ENVIRONMENT_CUSTOM_METADATA],
+                'connection_keys' => ['default' => $this->environment],
                 'enable_static_meta_data_cache' => false,
             ]);
         }

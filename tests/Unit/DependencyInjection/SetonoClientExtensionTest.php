@@ -10,7 +10,6 @@ use Setono\ClientBundle\Context\CookieBasedClientContext;
 use Setono\ClientBundle\Cookie\ClientCookieJar;
 use Setono\ClientBundle\DependencyInjection\SetonoClientExtension;
 use Setono\ClientBundle\Entity\Metadata;
-use Setono\ClientBundle\EventListener\Doctrine\ConvertToEntityListener;
 use Setono\ClientBundle\Tests\Unit\DependencyInjection\Fixture\CustomMetadata;
 use Setono\ClientBundle\Tests\Unit\DependencyInjection\Fixture\InterfaceOnlyMetadata;
 
@@ -87,29 +86,50 @@ final class SetonoClientExtensionTest extends AbstractExtensionTestCase
         $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.event_subscriber.store_metadata', 'kernel.event_subscriber');
         $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.client_context.cached', 'kernel.event_subscriber');
         $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.controller.client_value_resolver', 'controller.argument_value_resolver');
-        $this->assertContainerBuilderHasServiceDefinitionWithTag('setono_client.event_listener_doctrine.convert_to_entity', 'doctrine.event_listener', [
-            'event' => 'loadClassMetadata',
-        ]);
     }
 
     /**
      * @test
      */
-    public function after_loading_with_a_metadata_class_that_extends_the_bundles_class_the_doctrine_listener_is_removed(): void
+    public function after_loading_the_bundles_metadata_is_mapped_as_an_entity(): void
+    {
+        $this->load();
+
+        $this->assertContainerBuilderHasExactParameter('setono_client.doctrine_mapping.entity', true);
+        self::assertFalse($this->container->hasParameter('setono_client.doctrine_mapping.mapped_superclass'));
+    }
+
+    /**
+     * @test
+     */
+    public function after_loading_with_the_bundles_metadata_class_spelled_with_a_leading_backslash_the_bundles_metadata_is_mapped_as_an_entity(): void
+    {
+        $this->load(['metadata_class' => '\\' . Metadata::class]);
+
+        $this->assertContainerBuilderHasExactParameter('setono_client.doctrine_mapping.entity', true);
+        self::assertFalse($this->container->hasParameter('setono_client.doctrine_mapping.mapped_superclass'));
+    }
+
+    /**
+     * @test
+     */
+    public function after_loading_with_a_metadata_class_that_extends_the_bundles_class_the_bundles_metadata_is_mapped_as_a_mapped_superclass(): void
     {
         $this->load(['metadata_class' => CustomMetadata::class]);
 
-        $this->assertContainerBuilderNotHasService('setono_client.event_listener_doctrine.convert_to_entity');
+        $this->assertContainerBuilderHasExactParameter('setono_client.doctrine_mapping.mapped_superclass', true);
+        self::assertFalse($this->container->hasParameter('setono_client.doctrine_mapping.entity'));
     }
 
     /**
      * @test
      */
-    public function after_loading_with_a_metadata_class_that_only_implements_the_interface_the_doctrine_listener_is_kept(): void
+    public function after_loading_with_a_metadata_class_that_only_implements_the_interface_the_bundles_metadata_is_mapped_as_a_mapped_superclass(): void
     {
         $this->load(['metadata_class' => InterfaceOnlyMetadata::class]);
 
-        $this->assertContainerBuilderHasService('setono_client.event_listener_doctrine.convert_to_entity', ConvertToEntityListener::class);
+        $this->assertContainerBuilderHasExactParameter('setono_client.doctrine_mapping.mapped_superclass', true);
+        self::assertFalse($this->container->hasParameter('setono_client.doctrine_mapping.entity'));
     }
 
     /**
