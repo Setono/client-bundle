@@ -33,7 +33,7 @@ final class CustomMetadataClassTest extends MetadataTest
     /**
      * @test
      */
-    public function it_keeps_the_bundles_metadata_a_mapped_superclass(): void
+    public function it_maps_the_bundles_metadata_as_a_mapped_superclass(): void
     {
         self::assertTrue(self::getEntityManager()->getClassMetadata(Metadata::class)->isMappedSuperclass);
     }

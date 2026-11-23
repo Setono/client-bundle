@@ -39,3 +39,15 @@ The current client is now the source of truth for the client id, and the client 
 ### Decorating the client context
 
 Decorate `Setono\ClientBundle\Context\ClientContextInterface`, e.g. with `#[AsDecorator(ClientContextInterface::class)]`, or `setono_client.client_context.default`. You no longer need to pick a priority or implement `ResetInterface`. Don't decorate `setono_client.client_context.cached` itself, because Symfony would move its `kernel.terminate` listener to your decorator. `CachedClientContext` decorates the interface with priority `-1024`, so it wraps your decorator, and a request gets one client even if your decorator creates a client on every call.
+
+## Metadata entity mapping
+
+The bundle decides when the container compiles whether its `Setono\ClientBundle\Entity\Metadata` class is an entity or a mapped superclass. It's an entity when it's the configured `metadata_class` (the default), and a mapped superclass for any other class.
+
+### Removed
+
+- `Setono\ClientBundle\EventListener\Doctrine\ConvertToEntityListener`, with the service `setono_client.event_listener_doctrine.convert_to_entity`. The bundle no longer listens to Doctrine's `loadClassMetadata`.
+
+### Changed
+
+- With a `metadata_class` that only implements `MetadataInterface`, without extending `Setono\ClientBundle\Entity\Metadata`, the bundle no longer maps the table `setono_client__metadata`, so your next schema diff or migration drops it. With a custom metadata class configured, the bundle never wrote to that table.

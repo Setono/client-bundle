@@ -15,10 +15,21 @@ final class SetonoClientBundle extends Bundle
         return \dirname(__DIR__);
     }
 
+    /**
+     * Registers two mappings of the bundle's Metadata, each enabled by a parameter. SetonoClientExtension sets one of them
+     */
     public function build(ContainerBuilder $container): void
     {
         $container->addCompilerPass(DoctrineOrmMappingsPass::createXmlMappingDriver(
-            [__DIR__ . '/../config/doctrine-mapping' => 'Setono\ClientBundle\Entity'],
+            [__DIR__ . '/../config/doctrine-mapping/entity' => 'Setono\ClientBundle\Entity'],
+            [],
+            'setono_client.doctrine_mapping.entity',
+        ));
+
+        $container->addCompilerPass(DoctrineOrmMappingsPass::createXmlMappingDriver(
+            [__DIR__ . '/../config/doctrine-mapping/mapped-superclass' => 'Setono\ClientBundle\Entity'],
+            [],
+            'setono_client.doctrine_mapping.mapped_superclass',
         ));
     }
 }

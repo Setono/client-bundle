@@ -6,11 +6,6 @@
         ]
     },
     "mutators": {
-        "@default": true,
-        "InstanceOf_": {
-            "ignore": [
-                "Setono\\ClientBundle\\EventListener\\Doctrine\\ConvertToEntityListener::loadClassMetadata"
-            ]
-        }
+        "@default": true
     }
 }

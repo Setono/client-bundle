@@ -9,7 +9,7 @@ use Setono\Client\Metadata;
 use Symfony\Bridge\Doctrine\Middleware\Debug\DebugDataHolder;
 
 /**
- * Not final, because CustomMetadataClassTest runs these tests with an application's own metadata entity
+ * Not final, because CustomMetadataClassTest and InterfaceOnlyMetadataClassTest run these tests with an application's own metadata entity
  */
 class MetadataTest extends FunctionalTestCase
 {

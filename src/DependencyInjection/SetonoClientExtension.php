@@ -35,12 +35,14 @@ final class SetonoClientExtension extends Extension
         $container->setParameter('setono_client.cookie.expiration', $config['cookie']['expiration']);
         $container->setParameter('setono_client.metadata_class', $metadataClass);
 
-        $loader->load('services.xml');
+        // SetonoClientBundle registers two mappings of the bundle's Metadata, and Doctrine uses the one whose parameter exists.
+        // It's an entity only when it's the metadata class. Otherwise it's a mapped superclass: an application entity that
+        // extends it inherits its fields, and one that doesn't leaves the bundle's table out of the schema
+        $container->setParameter(
+            Metadata::class === $metadataClass ? 'setono_client.doctrine_mapping.entity' : 'setono_client.doctrine_mapping.mapped_superclass',
+            true,
+        );
 
-        // An application entity that extends the bundle's Metadata inherits its fields, but only while the bundle's class
-        // stays a mapped superclass. Doctrine would otherwise see two entities without an inheritance mapping
-        if (is_subclass_of($metadataClass, Metadata::class)) {
-            $container->removeDefinition('setono_client.event_listener_doctrine.convert_to_entity');
-        }
+        $loader->load('services.xml');
     }
 }

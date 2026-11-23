@@ -3,7 +3,9 @@
                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                   xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
                   http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
-    <mapped-superclass name="Setono\ClientBundle\Entity\Metadata" table="setono_client__metadata">
+    <!-- Used when the application configures its own metadata class. An entity that extends
+         Setono\ClientBundle\Entity\Metadata inherits these fields, but not a table name -->
+    <mapped-superclass name="Setono\ClientBundle\Entity\Metadata">
         <id name="clientId" type="string"/>
         <field name="metadata" type="json" nullable="true"/>
     </mapped-superclass>
