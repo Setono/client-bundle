@@ -13,8 +13,7 @@ use Prophecy\PhpUnit\ProphecyTrait;
 use Prophecy\Prophecy\ObjectProphecy;
 use Setono\Client\Client;
 use Setono\Client\Metadata;
-use Setono\ClientBundle\Client\ChangeAwareMetadata;
-use Setono\ClientBundle\Client\LazyChangeAwareMetadata;
+use Setono\ClientBundle\Client\LazyMetadata;
 use Setono\ClientBundle\Entity\Metadata as MetadataEntity;
 use Setono\ClientBundle\MetadataPersister\DoctrineOrmBasedMetadataPersister;
 
@@ -80,19 +79,20 @@ final class DoctrineOrmBasedMetadataPersisterTest extends TestCase
     /**
      * @test
      */
-    public function it_does_nothing_when_the_metadata_is_not_dirty(): void
+    public function it_does_nothing_when_the_metadata_has_not_changed(): void
     {
         $manager = $this->prophesize(EntityManagerInterface::class);
         $manager->find(Argument::cetera())->shouldNotBeCalled();
         $manager->persist(Argument::cetera())->shouldNotBeCalled();
         $manager->flush()->shouldNotBeCalled();
 
-        $managerRegistry = $this->createManagerRegistry($manager);
+        // Plain metadata, like a custom metadata provider may return
+        $metadata = new Metadata(['foo' => 'bar']);
+        self::assertSame('bar', $metadata->get('foo'));
 
-        $metadata = new ChangeAwareMetadata();
-        $this->createPersister($managerRegistry)->persist(new Client('client-id', $metadata));
+        $this->createPersister($this->createManagerRegistry($manager))->persist(new Client('client-id', $metadata));
 
-        self::assertFalse($metadata->isDirty());
+        self::assertFalse($metadata->hasChanged());
     }
 
     /**
@@ -111,37 +111,13 @@ final class DoctrineOrmBasedMetadataPersisterTest extends TestCase
         )->shouldBeCalledOnce();
         $manager->flush()->shouldBeCalledOnce();
 
-        $metadata = new ChangeAwareMetadata();
+        $metadata = new Metadata();
         $metadata->set('foo', 'bar');
 
         $this->createPersister($this->createManagerRegistry($manager))->persist(new Client('client-id', $metadata));
 
         self::assertInstanceOf(MetadataEntity::class, $persistedEntity);
         self::assertSame('client-id', $persistedEntity->getClientId());
-        self::assertSame(['foo' => 'bar'], $persistedEntity->getMetadata());
-    }
-
-    /**
-     * @test
-     */
-    public function it_persists_metadata_that_does_not_track_changes(): void
-    {
-        $persistedEntity = null;
-
-        $manager = $this->prophesize(EntityManagerInterface::class);
-        $manager->find(MetadataEntity::class, 'client-id')->willReturn(null);
-        $manager->persist(Argument::type(MetadataEntity::class))->will(
-            function (array $args) use (&$persistedEntity): void {
-                $persistedEntity = $args[0];
-            },
-        )->shouldBeCalledOnce();
-        $manager->flush()->shouldBeCalledOnce();
-
-        $client = new Client('client-id', new Metadata(['foo' => 'bar']));
-
-        $this->createPersister($this->createManagerRegistry($manager))->persist($client);
-
-        self::assertInstanceOf(MetadataEntity::class, $persistedEntity);
         self::assertSame(['foo' => 'bar'], $persistedEntity->getMetadata());
     }
 
@@ -158,7 +134,7 @@ final class DoctrineOrmBasedMetadataPersisterTest extends TestCase
         $manager->persist(Argument::cetera())->shouldNotBeCalled();
         $manager->flush()->shouldBeCalledOnce();
 
-        $metadata = new ChangeAwareMetadata();
+        $metadata = new Metadata();
         $metadata->set('foo', 'bar');
 
         $this->createPersister($this->createManagerRegistry($manager))->persist(new Client('client-id', $metadata));
@@ -178,12 +154,12 @@ final class DoctrineOrmBasedMetadataPersisterTest extends TestCase
         $manager->persist(Argument::type(MetadataEntity::class))->shouldBeCalledOnce();
         $manager->flush()->willThrow($exception);
 
-        $metadata = new ChangeAwareMetadata();
+        $metadata = new Metadata();
         $metadata->set('foo', 'bar');
 
         $this->createPersister($this->createManagerRegistry($manager))->persist(new Client('client-id', $metadata));
 
-        self::assertTrue($metadata->isDirty());
+        self::assertTrue($metadata->hasChanged());
     }
 
     /**
@@ -204,9 +180,9 @@ final class DoctrineOrmBasedMetadataPersisterTest extends TestCase
      *
      * @param array<string, mixed> $data
      */
-    private static function createLazyMetadata(array $data): LazyChangeAwareMetadata
+    private static function createLazyMetadata(array $data): LazyMetadata
     {
-        return LazyChangeAwareMetadata::createLazyGhost(static function (LazyChangeAwareMetadata $instance) use ($data): void {
+        return LazyMetadata::createLazyGhost(static function (LazyMetadata $instance) use ($data): void {
             $instance->__construct($data);
         });
     }

@@ -111,6 +111,42 @@ class MetadataTest extends FunctionalTestCase
     }
 
     /**
+     * MySQL doesn't keep the order of the keys in a JSON column, so the stored metadata can come back in another order
+     * than the metadata stores it in. Doctrine would see that as a change and update the row on every request
+     *
+     * @test
+     */
+    public function it_does_not_store_metadata_that_was_set_to_the_value_it_already_has(): void
+    {
+        $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
+
+        // The reserved expiry key first, as MySQL may return it, where the metadata itself puts it last
+        self::storeMetadata($this->getClientId(), [
+            Metadata::EXPIRES_KEY => ['baz' => time() + 3600],
+            'foo' => 'bar',
+            'baz' => 'qux',
+        ]);
+
+        $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
+        self::assertResponseIsSuccessful();
+
+        $queries = self::getExecutedQueries();
+        self::assertNotSame([], preg_grep('/^\s*SELECT\b/i', $queries), 'The request loads the stored metadata');
+        self::assertSame([], preg_grep('/^\s*(INSERT|UPDATE)\b/i', $queries));
+    }
+
+    /**
+     * @test
+     */
+    public function it_removes_the_expiry_when_a_value_is_set_without_a_ttl(): void
+    {
+        $this->browser->request('GET', '/metadata/set?key=foo&value=bar&ttl=3600');
+        $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
+
+        self::assertSame(['foo' => 'bar'], self::fetchStoredMetadata($this->getClientId()));
+    }
+
+    /**
      * @test
      */
     public function it_keeps_the_expiry_of_metadata_between_requests(): void

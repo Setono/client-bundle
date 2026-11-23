@@ -7,8 +7,7 @@ namespace Setono\ClientBundle\MetadataPersister;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\Persistence\ManagerRegistry;
 use Setono\Client\Client;
-use Setono\ClientBundle\Client\ChangeAwareMetadata;
-use Setono\ClientBundle\Client\LazyChangeAwareMetadata;
+use Setono\ClientBundle\Client\LazyMetadata;
 use Setono\ClientBundle\Entity\MetadataInterface as MetadataEntityInterface;
 use Setono\Doctrine\ORMTrait;
 
@@ -31,11 +30,12 @@ final class DoctrineOrmBasedMetadataPersister implements MetadataPersisterInterf
 
         $metadata = $client->metadata;
 
-        if ($metadata instanceof LazyChangeAwareMetadata && !$metadata->isLazyObjectInitialized()) {
+        // Checked first, because calling hasChanged() on a lazy ghost would load it from the database
+        if ($metadata instanceof LazyMetadata && !$metadata->isLazyObjectInitialized()) {
             return;
         }
 
-        if ($metadata instanceof ChangeAwareMetadata && !$metadata->isDirty()) {
+        if (!$metadata->hasChanged()) {
             return;
         }
 

@@ -115,14 +115,15 @@ an *anonymous* client of its own, which is never stored.
 
 ### Read and write metadata
 
-`$client->metadata` is a key/value store. Reading a key for the first time lazily loads the metadata from the
-database; writing marks it dirty so it is persisted at the end of the request.
+`$client->metadata` is a key/value store. Using it for the first time lazily loads the metadata from the database. At
+the end of the request it is stored, but only if it changed: a key was set to a new value or expiry, removed, or
+dropped because it expired. Setting a key to the value and expiry it already has is not a change.
 
 ```php
 $metadata = $client->metadata;
 
 $metadata->set('variant', 'B');           // store a value
-$metadata->set('promo', 'X', ttl: 3600);  // optional TTL in seconds
+$metadata->set('promo', 'X', ttl: 3600);  // optional TTL in seconds; without one, the key never expires
 
 $metadata->has('variant');                // true
 $metadata->get('variant');                // 'B' — throws if the key is missing, so guard with has()
@@ -234,7 +235,8 @@ setono_client:
   `lastSeenAt`. The cookie always holds the client id of the current client: when that differs from the id in the
   request's cookie (e.g. because a decorator chose another client), the cookie gets the new id and fresh timestamps.
 - **Lazy metadata** — `$client->metadata` is a lazy ghost object. The database is queried only the first time you
-  read a value, and a row is written only at the end of the request, and only if the metadata was actually changed.
+  read a value, and a row is written only at the end of the request, and only if the metadata changed
+  (`Metadata::hasChanged()` from [setono/client](https://github.com/Setono/client)).
 
 ## Extending the bundle
 
