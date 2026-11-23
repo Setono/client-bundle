@@ -45,7 +45,7 @@ Two concerns are built with **Symfony service decoration** in `config/services.x
   - Because of that subscriber tag, don't decorate `setono_client.client_context.cached` itself: Symfony moves a decorated service's tags to its decorator, so the container fails to compile ("must implement EventSubscriberInterface"). Decorate the interface or `setono_client.client_context.default`.
 - **Metadata provider**: `DoctrineOrmBasedMetadataProvider` (prio 64) → `EmptyMetadataProvider` (default). Doctrine loads from DB, falling back to the decorated provider when no row exists.
 
-`Cookie/ClientCookieJar` (`@internal`) owns everything about the client cookie: its name, format, validation (a non-empty client id of at most 255 bytes) and expiry. `read()` returns null for a missing or invalid cookie. `write()` stores the current client's id, keeps `firstSeenAt` only when the request's cookie holds the same id (otherwise fresh timestamps), and throws a `LogicException` for a client id that `read()` would reject.
+`Cookie/ClientCookieJar` (`@internal`) owns everything about the client cookie: its name, format, validation (a non-empty UTF-8 client id of at most 255 bytes) and expiry. `read()` returns null for a missing or invalid cookie. `write()` stores the current client's id, keeps `firstSeenAt` only when the request's cookie holds the same id (otherwise fresh timestamps), and throws a `LogicException` for a client id that `read()` would reject.
 
 ### Request lifecycle
 

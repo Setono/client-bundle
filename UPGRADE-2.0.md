@@ -22,7 +22,7 @@ The current client is now the source of truth for the client id, and the client 
   }
   ```
 
-  The bundle also ignores a client cookie whose client id is empty or longer than 255 bytes.
+  The bundle also ignores a client cookie whose client id is empty, longer than 255 bytes or not UTF-8.
 - `Setono\ClientBundle\Context\DefaultClientContext`. `CookieBasedClientContext` now gives a request without a valid client cookie a new client itself.
 - The dependency on `symfony/service-contracts`.
 
@@ -33,7 +33,7 @@ The current client is now the source of truth for the client id, and the client 
 - `CachedClientContext` no longer implements `Symfony\Contracts\Service\ResetInterface`, and it is no longer tagged `kernel.reset`. It keeps the client per request instead, and listens to `kernel.terminate` to keep it for that event's listeners.
 - The constructors of `CookieBasedClientContext`, `CachedClientContext` and `StoreCookieSubscriber` changed. The bundle's service definitions wire them.
 - The client cookie always holds the client id of the current client, i.e. what `ClientContextInterface::getClient()` returns, decorators included. In 1.x, a request with a client cookie kept the cookie's client id. When the ids differ, the client cookie gets the current client's id with fresh first and last seen timestamps.
-- Storing the client cookie throws a `LogicException` when the current client's id is empty or longer than 255 bytes, because the next request couldn't read it back.
+- Storing the client cookie throws a `LogicException` when the current client's id is empty, longer than 255 bytes or not UTF-8, because the next request couldn't read it back.
 - Outside a request (console commands, workers), every `getClient()` call returns an anonymous client of its own. In 1.x, the first one was kept until the container was reset. Listeners of `kernel.terminate` still get the request's current client, as in 1.x.
 
 ### Decorating the client context

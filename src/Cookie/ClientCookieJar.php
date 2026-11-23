@@ -54,7 +54,7 @@ final class ClientCookieJar
     {
         if (!self::isValid($client->id)) {
             throw new \LogicException(sprintf(
-                'The client id must be a non-empty string of at most %d bytes to be stored in the client cookie, but the current client has a client id of %d bytes. Check the services that decorate the client context (ClientContextInterface)',
+                'The client id must be a non-empty UTF-8 string of at most %d bytes to be stored in the client cookie, but the current client has a client id of %d bytes. Check the services that decorate the client context (ClientContextInterface)',
                 self::MAX_CLIENT_ID_LENGTH,
                 strlen($client->id),
             ));
@@ -72,11 +72,12 @@ final class ClientCookieJar
     }
 
     /**
-     * A valid client id isn't empty, because all clients with an empty client id would share one client. It's at most
-     * 255 bytes, so it fits the database column, which holds 255 characters
+     * A valid client id isn't empty, because all clients with an empty client id would share one client. It's UTF-8 and
+     * at most 255 bytes, so it fits the database column, which holds 255 characters. PHP url-decodes cookie values, so a
+     * cookie holding %FF gives a client id that isn't UTF-8
      */
     private static function isValid(string $clientId): bool
     {
-        return '' !== $clientId && strlen($clientId) <= self::MAX_CLIENT_ID_LENGTH;
+        return '' !== $clientId && strlen($clientId) <= self::MAX_CLIENT_ID_LENGTH && 1 === preg_match('//u', $clientId);
     }
 }

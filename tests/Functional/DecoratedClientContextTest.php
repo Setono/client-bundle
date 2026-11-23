@@ -77,7 +77,7 @@ final class DecoratedClientContextTest extends FunctionalTestCase
     public function it_refuses_to_store_a_current_client_id_that_is_not_valid(): void
     {
         $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('The client id must be a non-empty string');
+        $this->expectExceptionMessage('The client id must be a non-empty UTF-8 string');
 
         $this->browser->request('GET', '/?client_id=');
     }

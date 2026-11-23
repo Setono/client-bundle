@@ -277,7 +277,7 @@ final class UserClientContext implements ClientContextInterface
 Decorating `setono_client.client_context.default` works too. The bundle's `CachedClientContext` decorates the interface
 with the lowest priority (`-1024`), so it wraps your decorator and a request gets one client however often it's asked
 for, even if your decorator creates a client on every call. The cookie then stores the client id of your client. It must
-be a non‑empty string of at most 255 bytes.
+be a non‑empty UTF-8 string of at most 255 bytes.
 
 Inject `ClientContextInterface`, not `setono_client.client_context.default`: that service id doesn't include
 `CachedClientContext`. Don't decorate `setono_client.client_context.cached` itself. It also listens to
