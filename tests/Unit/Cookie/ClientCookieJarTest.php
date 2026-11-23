@@ -109,6 +109,22 @@ final class ClientCookieJarTest extends TestCase
     /**
      * @test
      */
+    public function it_reads_nothing_when_the_client_id_is_not_utf8(): void
+    {
+        self::assertNull(self::createJar()->read(self::createRequest((new Cookie("client-id-\xFF"))->toString())));
+    }
+
+    /**
+     * @test
+     */
+    public function it_reads_a_client_id_with_multibyte_characters(): void
+    {
+        self::assertSame('client-id-ø', self::createJar()->read(self::createRequest((new Cookie('client-id-ø'))->toString()))?->clientId);
+    }
+
+    /**
+     * @test
+     */
     public function it_writes_a_cookie_that_javascript_can_read(): void
     {
         $response = new Response();
@@ -202,7 +218,7 @@ final class ClientCookieJarTest extends TestCase
     public function it_refuses_to_write_an_empty_client_id(): void
     {
         $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('The client id must be a non-empty string of at most 255 bytes to be stored in the client cookie, but the current client has a client id of 0 bytes');
+        $this->expectExceptionMessage('The client id must be a non-empty UTF-8 string of at most 255 bytes to be stored in the client cookie, but the current client has a client id of 0 bytes');
 
         self::createJar()->write(new Request(), new Response(), new Client(''));
     }
@@ -216,6 +232,17 @@ final class ClientCookieJarTest extends TestCase
         $this->expectExceptionMessage('client id of 256 bytes');
 
         self::createJar()->write(new Request(), new Response(), new Client(str_repeat('a', 256)));
+    }
+
+    /**
+     * @test
+     */
+    public function it_refuses_to_write_a_client_id_that_is_not_utf8(): void
+    {
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('client id of 11 bytes');
+
+        self::createJar()->write(new Request(), new Response(), new Client("client-id-\xFF"));
     }
 
     private static function createJar(string $name = self::COOKIE_NAME, string $expiration = '+365 days'): ClientCookieJar
