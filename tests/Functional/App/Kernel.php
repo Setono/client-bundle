@@ -113,6 +113,7 @@ final class Kernel extends BaseKernel
             ->load(__NAMESPACE__ . '\\Controller\\', __DIR__ . '/Controller')->tag('controller.service_arguments')
             ->load(__NAMESPACE__ . '\\Context\\', __DIR__ . '/Context')
             ->load(__NAMESPACE__ . '\\EventSubscriber\\', __DIR__ . '/EventSubscriber')
+            ->load(__NAMESPACE__ . '\\MetadataStore\\', __DIR__ . '/MetadataStore')
         ;
 
         $metadataClass = match ($this->environment) {

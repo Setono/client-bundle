@@ -10,6 +10,8 @@ use Setono\ClientBundle\Context\CookieBasedClientContext;
 use Setono\ClientBundle\Cookie\ClientCookieJar;
 use Setono\ClientBundle\DependencyInjection\SetonoClientExtension;
 use Setono\ClientBundle\Entity\Metadata;
+use Setono\ClientBundle\MetadataStore\DoctrineOrmBasedMetadataStore;
+use Setono\ClientBundle\MetadataStore\MetadataStoreInterface;
 use Setono\ClientBundle\Tests\Unit\DependencyInjection\Fixture\CustomMetadata;
 use Setono\ClientBundle\Tests\Unit\DependencyInjection\Fixture\InterfaceOnlyMetadata;
 
@@ -63,6 +65,9 @@ final class SetonoClientExtensionTest extends AbstractExtensionTestCase
         $this->assertContainerBuilderHasAlias('setono_client.client_context.default', 'setono_client.client_context.cookie_based');
         $this->assertContainerBuilderHasAlias(ClientContextInterface::class, 'setono_client.client_context.default');
         $this->assertContainerBuilderHasService('setono_client.cookie.client_cookie_jar', ClientCookieJar::class);
+        $this->assertContainerBuilderHasService('setono_client.metadata_store.doctrine_orm_based', DoctrineOrmBasedMetadataStore::class);
+        $this->assertContainerBuilderHasAlias('setono_client.metadata_store.default', 'setono_client.metadata_store.doctrine_orm_based');
+        $this->assertContainerBuilderHasAlias(MetadataStoreInterface::class, 'setono_client.metadata_store.default');
     }
 
     /**

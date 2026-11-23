@@ -12,7 +12,7 @@ use Setono\Client\Cookie;
 use Setono\Client\Metadata;
 use Setono\ClientBundle\Context\CookieBasedClientContext;
 use Setono\ClientBundle\Cookie\ClientCookieJar;
-use Setono\ClientBundle\MetadataProvider\MetadataProviderInterface;
+use Setono\ClientBundle\MetadataStore\MetadataStoreInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Uid\Uuid;
@@ -30,10 +30,10 @@ final class CookieBasedClientContextTest extends TestCase
     {
         $metadata = new Metadata(['foo' => 'bar']);
 
-        $metadataProvider = $this->prophesize(MetadataProviderInterface::class);
-        $metadataProvider->getMetadata('client-id')->willReturn($metadata);
+        $metadataStore = $this->prophesize(MetadataStoreInterface::class);
+        $metadataStore->load('client-id')->willReturn($metadata);
 
-        $client = $this->createContext($metadataProvider, self::createRequest('client-id'))->getClient();
+        $client = $this->createContext($metadataStore, self::createRequest('client-id'))->getClient();
 
         self::assertSame('client-id', $client->id);
         self::assertSame($metadata, $client->metadata);
@@ -44,10 +44,10 @@ final class CookieBasedClientContextTest extends TestCase
      */
     public function it_recognizes_the_client_by_the_client_cookie_of_the_main_request(): void
     {
-        $metadataProvider = $this->prophesize(MetadataProviderInterface::class);
-        $metadataProvider->getMetadata(Argument::type('string'))->willReturn(new Metadata());
+        $metadataStore = $this->prophesize(MetadataStoreInterface::class);
+        $metadataStore->load(Argument::type('string'))->willReturn(new Metadata());
 
-        $context = $this->createContext($metadataProvider, self::createRequest('main-client-id'), self::createRequest('sub-client-id'));
+        $context = $this->createContext($metadataStore, self::createRequest('main-client-id'), self::createRequest('sub-client-id'));
 
         self::assertSame('main-client-id', $context->getClient()->id);
     }
@@ -57,10 +57,10 @@ final class CookieBasedClientContextTest extends TestCase
      */
     public function it_gives_a_request_without_a_client_cookie_a_new_client(): void
     {
-        $metadataProvider = $this->prophesize(MetadataProviderInterface::class);
-        $metadataProvider->getMetadata(Argument::any())->shouldNotBeCalled();
+        $metadataStore = $this->prophesize(MetadataStoreInterface::class);
+        $metadataStore->load(Argument::any())->shouldNotBeCalled();
 
-        $client = $this->createContext($metadataProvider, new Request())->getClient();
+        $client = $this->createContext($metadataStore, new Request())->getClient();
 
         self::assertTrue(Uuid::isValid($client->id));
         self::assertFalse($client->metadata->hasChanged());
@@ -72,10 +72,10 @@ final class CookieBasedClientContextTest extends TestCase
      */
     public function it_gives_a_request_with_an_invalid_client_cookie_a_new_client(): void
     {
-        $metadataProvider = $this->prophesize(MetadataProviderInterface::class);
-        $metadataProvider->getMetadata(Argument::any())->shouldNotBeCalled();
+        $metadataStore = $this->prophesize(MetadataStoreInterface::class);
+        $metadataStore->load(Argument::any())->shouldNotBeCalled();
 
-        $client = $this->createContext($metadataProvider, new Request([], [], [], [self::COOKIE_NAME => '1.2.3']))->getClient();
+        $client = $this->createContext($metadataStore, new Request([], [], [], [self::COOKIE_NAME => '1.2.3']))->getClient();
 
         self::assertTrue(Uuid::isValid($client->id));
     }
@@ -85,10 +85,10 @@ final class CookieBasedClientContextTest extends TestCase
      */
     public function it_gives_every_call_without_a_request_an_anonymous_client(): void
     {
-        $metadataProvider = $this->prophesize(MetadataProviderInterface::class);
-        $metadataProvider->getMetadata(Argument::any())->shouldNotBeCalled();
+        $metadataStore = $this->prophesize(MetadataStoreInterface::class);
+        $metadataStore->load(Argument::any())->shouldNotBeCalled();
 
-        $context = $this->createContext($metadataProvider);
+        $context = $this->createContext($metadataStore);
         $client = $context->getClient();
 
         self::assertTrue(Uuid::isValid($client->id));
@@ -97,10 +97,10 @@ final class CookieBasedClientContextTest extends TestCase
     }
 
     /**
-     * @param ObjectProphecy<MetadataProviderInterface> $metadataProvider
+     * @param ObjectProphecy<MetadataStoreInterface> $metadataStore
      * @param Request ...$requests the requests on the request stack, the main request first
      */
-    private function createContext(ObjectProphecy $metadataProvider, Request ...$requests): CookieBasedClientContext
+    private function createContext(ObjectProphecy $metadataStore, Request ...$requests): CookieBasedClientContext
     {
         $requestStack = new RequestStack();
         foreach ($requests as $request) {
@@ -110,7 +110,7 @@ final class CookieBasedClientContextTest extends TestCase
         return new CookieBasedClientContext(
             $requestStack,
             new ClientCookieJar(self::COOKIE_NAME, '+365 days'),
-            $metadataProvider->reveal(),
+            $metadataStore->reveal(),
         );
     }
 

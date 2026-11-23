@@ -8,7 +8,7 @@ use Setono\Client\Metadata;
 use Symfony\Component\VarExporter\LazyGhostTrait;
 
 /**
- * Metadata that DoctrineOrmBasedMetadataProvider returns as a lazy ghost, so the database is only queried when the
+ * Metadata that DoctrineOrmBasedMetadataStore::load() returns as a lazy ghost, so the database is only queried when the
  * metadata is used
  *
  * @internal

@@ -54,7 +54,7 @@ The bundle decides when the container compiles whether its `Setono\ClientBundle\
 
 ## Metadata change tracking
 
-The bundle requires setono/client `^1.2`, whose `Setono\Client\Metadata` tracks its own changes with `hasChanged()`. The bundle stores metadata only when it changed, whatever `Metadata` your client context or metadata provider creates. Setting a key to the value and expiry it already has is not a change, so it no longer writes the row.
+The bundle requires setono/client `^1.2`, whose `Setono\Client\Metadata` tracks its own changes with `hasChanged()`. The bundle's metadata store stores metadata only when it changed, whatever `Metadata` your client context creates. Setting a key to the value and expiry it already has is not a change, so it no longer writes the row.
 
 ### Removed
 
@@ -63,6 +63,28 @@ The bundle requires setono/client `^1.2`, whose `Setono\Client\Metadata` tracks 
 ### Changed
 
 - `Setono\ClientBundle\Client\LazyChangeAwareMetadata` is now `Setono\ClientBundle\Client\LazyMetadata`. It's internal and final.
-- `EmptyMetadataProvider::getMetadata()` returns a `Setono\Client\Metadata`.
-- A custom `MetadataProviderInterface` that returns a plain `Setono\Client\Metadata` no longer stores it on every request, only when it changed.
+- Metadata that your client context creates, e.g. a plain `Setono\Client\Metadata`, is no longer stored on every request, only when it changed.
 - In setono/client 1.2, `$client->metadata->set($key, $value)` without a TTL removes any expiry the key had, so the key never expires. With setono/client 1.1, the key kept its expiry. To keep a key expiring, pass the TTL again: `set($key, $value, $ttl)`.
+
+## Metadata store
+
+One service loads and stores the metadata of clients: `Setono\ClientBundle\MetadataStore\MetadataStoreInterface`. It replaces the metadata provider and the metadata persister. The bundle's `DoctrineOrmBasedMetadataStore` is `setono_client.metadata_store.doctrine_orm_based`, which `setono_client.metadata_store.default` aliases, and the interface aliases `setono_client.metadata_store.default`.
+
+### Removed
+
+- `Setono\ClientBundle\MetadataProvider\MetadataProviderInterface`, `EmptyMetadataProvider` and `DoctrineOrmBasedMetadataProvider`, with the services `setono_client.metadata_provider.default`, `setono_client.metadata_provider.empty` and `setono_client.metadata_provider.doctrine_orm_based`.
+- `Setono\ClientBundle\MetadataPersister\MetadataPersisterInterface` and `DoctrineOrmBasedMetadataPersister`, with the services `setono_client.metadata_persister.default` and `setono_client.metadata_persister.doctrine_orm_based`.
+- The fallback to a decorated metadata provider, with no replacement. `DoctrineOrmBasedMetadataProvider` asked the provider it decorated for the metadata of a client without a stored row. Now a client without a stored row gets empty metadata. A decorator of the store can't take its place: it can't tell whether a client has a stored row without loading the metadata, which would query the database on every request.
+
+### Changed
+
+- The constructors of `CookieBasedClientContext` and `StoreMetadataSubscriber` take a `MetadataStoreInterface`. The bundle's service definitions inject the interface into both, so a decorator of the store loads and stores the metadata of every request.
+
+### Porting a custom provider or persister
+
+Implement `MetadataStoreInterface`, which does both, and decorate `Setono\ClientBundle\MetadataStore\MetadataStoreInterface`, e.g. with `#[AsDecorator(MetadataStoreInterface::class)]`, or `setono_client.metadata_store.default`. The bundle calls `load()` on every request with a client cookie and `store()` at the end of every main request, so an implementation must keep the two rules of the interface:
+
+- `load(string $clientId): Metadata` takes the place of `MetadataProviderInterface::getMetadata()`. It returns metadata that doesn't touch your storage until it's used, e.g. a lazy ghost object.
+- `store(Client $client): void` takes the place of `MetadataPersisterInterface::persist()`. It stores the metadata only when it changed (`$client->metadata->hasChanged()`), and it doesn't load metadata that was never used to find out.
+
+A decorator that ports only a provider passes `store()` on to the decorated store. A decorator that ports a persister, or adds to the storing, e.g. by also writing changed metadata elsewhere, ports the loading too. The bundle's store keeps to itself whether the metadata it loaded was used, so calling `hasChanged()` on that metadata loads it, which queries the database on every request with a client cookie.

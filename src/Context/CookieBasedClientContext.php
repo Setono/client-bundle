@@ -6,7 +6,7 @@ namespace Setono\ClientBundle\Context;
 
 use Setono\Client\Client;
 use Setono\ClientBundle\Cookie\ClientCookieJar;
-use Setono\ClientBundle\MetadataProvider\MetadataProviderInterface;
+use Setono\ClientBundle\MetadataStore\MetadataStoreInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
@@ -18,7 +18,7 @@ final class CookieBasedClientContext implements ClientContextInterface
     public function __construct(
         private readonly RequestStack $requestStack,
         private readonly ClientCookieJar $cookieJar,
-        private readonly MetadataProviderInterface $metadataProvider,
+        private readonly MetadataStoreInterface $metadataStore,
     ) {
     }
 
@@ -31,6 +31,6 @@ final class CookieBasedClientContext implements ClientContextInterface
             return new Client();
         }
 
-        return new Client($cookie->clientId, $this->metadataProvider->getMetadata($cookie->clientId));
+        return new Client($cookie->clientId, $this->metadataStore->load($cookie->clientId));
     }
 }

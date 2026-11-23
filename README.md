@@ -234,9 +234,10 @@ setono_client:
 - **Cookie** — on each main response, `StoreCookieSubscriber` writes the cookie of the current client and bumps
   `lastSeenAt`. The cookie always holds the client id of the current client: when that differs from the id in the
   request's cookie (e.g. because a decorator chose another client), the cookie gets the new id and fresh timestamps.
-- **Lazy metadata** — `$client->metadata` is a lazy ghost object. The database is queried only the first time you
-  read a value, and a row is written only at the end of the request, and only if the metadata changed
-  (`Metadata::hasChanged()` from [setono/client](https://github.com/Setono/client)).
+- **Lazy metadata** — the metadata store (`MetadataStoreInterface`) loads `$client->metadata` as a lazy ghost object.
+  The database is queried only the first time you use it, and a client without a stored row gets empty metadata. The
+  store writes the row only at the end of the request, and only if the metadata changed (`Metadata::hasChanged()` from
+  [setono/client](https://github.com/Setono/client)).
 
 ## Extending the bundle
 
@@ -245,8 +246,7 @@ Every moving part is a service behind an interface, so you can swap or decorate 
 | Concern | Interface |
 | --- | --- |
 | Resolving the current client | `Setono\ClientBundle\Context\ClientContextInterface` |
-| Loading metadata | `Setono\ClientBundle\MetadataProvider\MetadataProviderInterface` |
-| Persisting metadata | `Setono\ClientBundle\MetadataPersister\MetadataPersisterInterface` |
+| Loading and storing metadata | `Setono\ClientBundle\MetadataStore\MetadataStoreInterface` |
 | Metadata entity | `Setono\ClientBundle\Entity\MetadataInterface` |
 
 To add behaviour, [decorate](https://symfony.com/doc/current/service_container/service_decoration.html) the relevant
