@@ -17,6 +17,14 @@
             <argument type="service" id="setono_client.cookie_provider.default"/>
         </service>
 
+        <service id="setono_client.client_context.pending_metadata"
+                 class="Setono\ClientBundle\Context\PendingMetadataClientContext"
+                 decorates="setono_client.client_context.default" decoration-priority="48">
+            <argument type="service" id="setono_client.client_context.pending_metadata.inner"/>
+            <argument type="service" id="setono_client.pending_metadata_storage.default"/>
+            <argument type="service" id="request_stack"/>
+        </service>
+
         <service id="setono_client.client_context.cached"
                  class="Setono\ClientBundle\Context\CachedClientContext"
                  decorates="setono_client.client_context.default" decoration-priority="32">
@@ -64,6 +72,7 @@
             <argument type="service" id="event_dispatcher"/>
             <argument>%setono_client.cookie.name%</argument>
             <argument>%setono_client.cookie.expiration%</argument>
+            <argument type="service" id="setono_client.pending_metadata_storage.default"/>
 
             <tag name="kernel.event_subscriber"/>
         </service>
@@ -84,6 +93,20 @@
                  class="Setono\ClientBundle\MetadataPersister\DoctrineOrmBasedMetadataPersister">
             <argument type="service" id="doctrine"/>
             <argument>%setono_client.metadata_class%</argument>
+        </service>
+
+        <!-- Pending Metadata Storages -->
+        <service id="Setono\ClientBundle\PendingMetadataStorage\PendingMetadataStorageInterface"
+                 alias="setono_client.pending_metadata_storage.default"/>
+
+        <service id="setono_client.pending_metadata_storage.default"
+                 alias="setono_client.pending_metadata_storage.cookie_based"/>
+
+        <service id="setono_client.pending_metadata_storage.cookie_based"
+                 class="Setono\ClientBundle\PendingMetadataStorage\CookieBasedPendingMetadataStorage">
+            <argument>%setono_client.cookie.name%_pending_metadata</argument>
+            <argument>%setono_client.cookie.expiration%</argument>
+            <argument>%kernel.secret%</argument>
         </service>
 
         <!-- Metadata Providers -->

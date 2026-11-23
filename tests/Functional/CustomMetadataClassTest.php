@@ -23,6 +23,7 @@ final class CustomMetadataClassTest extends MetadataTest
      */
     public function it_stores_the_metadata_in_the_configured_entity(): void
     {
+        $this->becomeReturningVisitor();
         $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
 
         self::assertResponseIsSuccessful();
