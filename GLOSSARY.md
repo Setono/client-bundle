@@ -37,3 +37,7 @@ When the client was last seen, i.e. the latest request that refreshed its client
 **Metadata**:
 Key/value data kept per client between visits, each key with an optional expiry.
 _Avoid_: attributes, properties, client data
+
+**Changed metadata**:
+Metadata whose values or expiry times differ from what was loaded, including expired keys that were dropped. Setting a key to the value and expiry it already has is not a change. Only changed metadata is stored.
+_Avoid_: dirty metadata, modified metadata
