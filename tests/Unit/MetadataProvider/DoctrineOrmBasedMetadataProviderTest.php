@@ -11,7 +11,7 @@ use Prophecy\Argument;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Prophecy\Prophecy\ObjectProphecy;
 use Setono\Client\Metadata;
-use Setono\ClientBundle\Client\LazyChangeAwareMetadata;
+use Setono\ClientBundle\Client\LazyMetadata;
 use Setono\ClientBundle\Entity\Metadata as MetadataEntity;
 use Setono\ClientBundle\MetadataProvider\DoctrineOrmBasedMetadataProvider;
 use Setono\ClientBundle\MetadataProvider\MetadataProviderInterface;
@@ -32,7 +32,7 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
 
         $metadata = $this->createProvider($managerRegistry, $decorated)->getMetadata('some-client-id');
 
-        self::assertInstanceOf(LazyChangeAwareMetadata::class, $metadata);
+        self::assertInstanceOf(LazyMetadata::class, $metadata);
         self::assertFalse($metadata->isLazyObjectInitialized());
     }
 
@@ -49,9 +49,9 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
         $metadata = $this->createProvider($this->createManagerRegistry($manager), $decorated)->getMetadata('some-client-id');
         $metadata->set('some-key', 'some-value');
 
-        self::assertInstanceOf(LazyChangeAwareMetadata::class, $metadata);
+        self::assertInstanceOf(LazyMetadata::class, $metadata);
         self::assertTrue($metadata->isLazyObjectInitialized());
-        self::assertTrue($metadata->isDirty());
+        self::assertTrue($metadata->hasChanged());
         self::assertSame('some-value', $metadata->get('some-key'));
     }
 
@@ -73,8 +73,8 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
         $metadata = $this->createProvider($this->createManagerRegistry($manager), $decorated)->getMetadata('some-client-id');
 
         self::assertSame('bar', $metadata->get('foo'));
-        self::assertInstanceOf(LazyChangeAwareMetadata::class, $metadata);
-        self::assertFalse($metadata->isDirty());
+        self::assertInstanceOf(LazyMetadata::class, $metadata);
+        self::assertFalse($metadata->hasChanged());
     }
 
     /**
@@ -91,8 +91,8 @@ final class DoctrineOrmBasedMetadataProviderTest extends TestCase
         $metadata = $this->createProvider($this->createManagerRegistry($manager), $decorated)->getMetadata('some-client-id');
 
         self::assertSame('bar', $metadata->get('foo'));
-        self::assertInstanceOf(LazyChangeAwareMetadata::class, $metadata);
-        self::assertFalse($metadata->isDirty());
+        self::assertInstanceOf(LazyMetadata::class, $metadata);
+        self::assertFalse($metadata->hasChanged());
     }
 
     /**

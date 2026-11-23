@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Setono\ClientBundle\Context;
 
 use Setono\Client\Client;
-use Setono\ClientBundle\Client\ChangeAwareMetadata;
 use Setono\ClientBundle\Cookie\ClientCookieJar;
 use Setono\ClientBundle\MetadataProvider\MetadataProviderInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -29,7 +28,7 @@ final class CookieBasedClientContext implements ClientContextInterface
         $cookie = null === $request ? null : $this->cookieJar->read($request);
 
         if (null === $cookie) {
-            return new Client(null, new ChangeAwareMetadata());
+            return new Client();
         }
 
         return new Client($cookie->clientId, $this->metadataProvider->getMetadata($cookie->clientId));

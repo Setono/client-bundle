@@ -10,7 +10,6 @@ use Prophecy\PhpUnit\ProphecyTrait;
 use Prophecy\Prophecy\ObjectProphecy;
 use Setono\Client\Cookie;
 use Setono\Client\Metadata;
-use Setono\ClientBundle\Client\ChangeAwareMetadata;
 use Setono\ClientBundle\Context\CookieBasedClientContext;
 use Setono\ClientBundle\Cookie\ClientCookieJar;
 use Setono\ClientBundle\MetadataProvider\MetadataProviderInterface;
@@ -64,7 +63,7 @@ final class CookieBasedClientContextTest extends TestCase
         $client = $this->createContext($metadataProvider, new Request())->getClient();
 
         self::assertTrue(Uuid::isValid($client->id));
-        self::assertInstanceOf(ChangeAwareMetadata::class, $client->metadata);
+        self::assertFalse($client->metadata->hasChanged());
         self::assertCount(0, $client->metadata);
     }
 
@@ -93,7 +92,7 @@ final class CookieBasedClientContextTest extends TestCase
         $client = $context->getClient();
 
         self::assertTrue(Uuid::isValid($client->id));
-        self::assertInstanceOf(ChangeAwareMetadata::class, $client->metadata);
+        self::assertCount(0, $client->metadata);
         self::assertNotSame($client->id, $context->getClient()->id);
     }
 

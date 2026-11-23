@@ -51,3 +51,18 @@ The bundle decides when the container compiles whether its `Setono\ClientBundle\
 ### Changed
 
 - With a `metadata_class` that only implements `MetadataInterface`, without extending `Setono\ClientBundle\Entity\Metadata`, the bundle no longer maps the table `setono_client__metadata`, so your next schema diff or migration drops it. With a custom metadata class configured, the bundle never wrote to that table.
+
+## Metadata change tracking
+
+The bundle requires setono/client `^1.2`, whose `Setono\Client\Metadata` tracks its own changes with `hasChanged()`. The bundle stores metadata only when it changed, whatever `Metadata` your client context or metadata provider creates. Setting a key to the value and expiry it already has is not a change, so it no longer writes the row.
+
+### Removed
+
+- `Setono\ClientBundle\Client\ChangeAwareMetadata`. Create a `Setono\Client\Metadata` instead, and call `hasChanged()` where you called `isDirty()`.
+
+### Changed
+
+- `Setono\ClientBundle\Client\LazyChangeAwareMetadata` is now `Setono\ClientBundle\Client\LazyMetadata`. It's internal and final.
+- `EmptyMetadataProvider::getMetadata()` returns a `Setono\Client\Metadata`.
+- A custom `MetadataProviderInterface` that returns a plain `Setono\Client\Metadata` no longer stores it on every request, only when it changed.
+- In setono/client 1.2, `$client->metadata->set($key, $value)` without a TTL removes any expiry the key had, so the key never expires. With setono/client 1.1, the key kept its expiry. To keep a key expiring, pass the TTL again: `set($key, $value, $ttl)`.

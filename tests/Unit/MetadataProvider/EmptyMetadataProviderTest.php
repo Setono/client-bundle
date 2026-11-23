@@ -17,6 +17,6 @@ final class EmptyMetadataProviderTest extends TestCase
         $metadata = (new EmptyMetadataProvider())->getMetadata('client-id');
 
         self::assertCount(0, $metadata);
-        self::assertFalse($metadata->isDirty());
+        self::assertFalse($metadata->hasChanged());
     }
 }
