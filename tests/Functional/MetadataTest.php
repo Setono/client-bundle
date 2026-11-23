@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Setono\ClientBundle\Tests\Functional;
 
 use Doctrine\ORM\Tools\SchemaValidator;
+use Doctrine\Persistence\ManagerRegistry;
 use Setono\Client\Metadata;
 use Symfony\Bridge\Doctrine\Middleware\Debug\DebugDataHolder;
 
@@ -46,6 +47,32 @@ class MetadataTest extends FunctionalTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSame(['foo' => 'bar'], $this->getResponseData());
+    }
+
+    /**
+     * @test
+     */
+    public function it_gives_a_returning_visitor_without_stored_metadata_empty_metadata(): void
+    {
+        $this->browser->request('GET', '/');
+
+        $this->browser->request('GET', '/metadata');
+
+        self::assertResponseIsSuccessful();
+        self::assertSame([], $this->getResponseData());
+    }
+
+    /**
+     * @test
+     */
+    public function it_stores_the_metadata_of_a_returning_visitor_without_stored_metadata(): void
+    {
+        $this->browser->request('GET', '/');
+
+        $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
+
+        self::assertResponseIsSuccessful();
+        self::assertSame(['foo' => 'bar'], self::fetchStoredMetadata($this->getClientId()));
     }
 
     /**
@@ -111,6 +138,59 @@ class MetadataTest extends FunctionalTestCase
     }
 
     /**
+     * @test
+     */
+    public function it_does_not_query_the_database_for_a_new_visitor_that_does_not_use_metadata(): void
+    {
+        $this->browser->request('GET', '/');
+
+        self::assertResponseIsSuccessful();
+        self::assertSame([], self::getExecutedQueries());
+    }
+
+    /**
+     * @test
+     */
+    public function it_does_not_query_the_database_for_a_returning_visitor_without_stored_metadata_that_does_not_use_it(): void
+    {
+        $this->browser->request('GET', '/');
+
+        $this->browser->request('GET', '/');
+
+        self::assertResponseIsSuccessful();
+        self::assertSame([], self::getExecutedQueries());
+        self::assertSame(0, self::countStoredMetadata());
+    }
+
+    /**
+     * @test
+     */
+    public function it_does_not_start_the_entity_manager_when_the_metadata_is_not_used(): void
+    {
+        $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
+
+        $this->browser->request('GET', '/');
+
+        self::assertResponseIsSuccessful();
+        self::assertFalse(self::hasStartedAnEntityManager());
+
+        // Proves that a request that uses the metadata starts the entity manager
+        $this->browser->request('GET', '/metadata');
+        self::assertTrue(self::hasStartedAnEntityManager());
+    }
+
+    /**
+     * @test
+     */
+    public function it_does_not_start_the_entity_manager_for_a_new_visitor_that_does_not_use_metadata(): void
+    {
+        $this->browser->request('GET', '/');
+
+        self::assertResponseIsSuccessful();
+        self::assertFalse(self::hasStartedAnEntityManager());
+    }
+
+    /**
      * MySQL doesn't keep the order of the keys in a JSON column, so the stored metadata can come back in another order
      * than the metadata stores it in. Doctrine would see that as a change and update the row on every request
      *
@@ -129,6 +209,29 @@ class MetadataTest extends FunctionalTestCase
 
         $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
         self::assertResponseIsSuccessful();
+
+        $queries = self::getExecutedQueries();
+        self::assertNotSame([], preg_grep('/^\s*SELECT\b/i', $queries), 'The request loads the stored metadata');
+        self::assertSame([], preg_grep('/^\s*(INSERT|UPDATE)\b/i', $queries));
+    }
+
+    /**
+     * Stores the row with its keys in another order first, like it_does_not_store_metadata_that_was_set_to_the_value_it_already_has()
+     *
+     * @test
+     */
+    public function it_does_not_store_metadata_that_was_only_read(): void
+    {
+        $this->browser->request('GET', '/metadata/set?key=foo&value=bar');
+
+        self::storeMetadata($this->getClientId(), [
+            Metadata::EXPIRES_KEY => ['foo' => time() + 3600],
+            'foo' => 'bar',
+        ]);
+
+        $this->browser->request('GET', '/metadata');
+        self::assertResponseIsSuccessful();
+        self::assertSame(['foo' => 'bar'], $this->getResponseData());
 
         $queries = self::getExecutedQueries();
         self::assertNotSame([], preg_grep('/^\s*SELECT\b/i', $queries), 'The request loads the stored metadata');
@@ -223,6 +326,23 @@ class MetadataTest extends FunctionalTestCase
         self::assertIsArray($data);
 
         return $data;
+    }
+
+    /**
+     * Tells whether the last request started any entity manager
+     */
+    private static function hasStartedAnEntityManager(): bool
+    {
+        $managerRegistry = self::getContainer()->get('doctrine');
+        self::assertInstanceOf(ManagerRegistry::class, $managerRegistry);
+
+        foreach ($managerRegistry->getManagerNames() as $serviceId) {
+            if (self::getContainer()->initialized($serviceId)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

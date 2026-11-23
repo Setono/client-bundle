@@ -12,7 +12,7 @@
                  class="Setono\ClientBundle\Context\CookieBasedClientContext">
             <argument type="service" id="request_stack"/>
             <argument type="service" id="setono_client.cookie.client_cookie_jar"/>
-            <argument type="service" id="setono_client.metadata_provider.default"/>
+            <argument type="service" id="Setono\ClientBundle\MetadataStore\MetadataStoreInterface"/>
         </service>
 
         <!-- Decorates the interface with the lowest priority, so it also wraps the decorators of the application,
@@ -56,31 +56,18 @@
         <service id="setono_client.event_subscriber.store_metadata"
                  class="Setono\ClientBundle\EventSubscriber\StoreMetadataSubscriber">
             <argument type="service" id="Setono\ClientBundle\Context\ClientContextInterface"/>
-            <argument type="service" id="setono_client.metadata_persister.default"/>
+            <argument type="service" id="Setono\ClientBundle\MetadataStore\MetadataStoreInterface"/>
 
             <tag name="kernel.event_subscriber"/>
         </service>
 
-        <!-- Metadata Persisters -->
-        <service id="setono_client.metadata_persister.default"
-                 alias="setono_client.metadata_persister.doctrine_orm_based"/>
+        <!-- Metadata store. Inject the interface, so a decorator of the interface handles both loading and storing -->
+        <service id="Setono\ClientBundle\MetadataStore\MetadataStoreInterface" alias="setono_client.metadata_store.default"/>
 
-        <service id="setono_client.metadata_persister.doctrine_orm_based"
-                 class="Setono\ClientBundle\MetadataPersister\DoctrineOrmBasedMetadataPersister">
-            <argument type="service" id="doctrine"/>
-            <argument>%setono_client.metadata_class%</argument>
-        </service>
+        <service id="setono_client.metadata_store.default" alias="setono_client.metadata_store.doctrine_orm_based"/>
 
-        <!-- Metadata Providers -->
-        <service id="setono_client.metadata_provider.default" alias="setono_client.metadata_provider.empty"/>
-
-        <service id="setono_client.metadata_provider.empty"
-                 class="Setono\ClientBundle\MetadataProvider\EmptyMetadataProvider"/>
-
-        <service id="setono_client.metadata_provider.doctrine_orm_based"
-                 class="Setono\ClientBundle\MetadataProvider\DoctrineOrmBasedMetadataProvider"
-                 decorates="setono_client.metadata_provider.default" decoration-priority="64">
-            <argument type="service" id="setono_client.metadata_provider.doctrine_orm_based.inner"/>
+        <service id="setono_client.metadata_store.doctrine_orm_based"
+                 class="Setono\ClientBundle\MetadataStore\DoctrineOrmBasedMetadataStore">
             <argument type="service" id="doctrine"/>
             <argument>%setono_client.metadata_class%</argument>
         </service>

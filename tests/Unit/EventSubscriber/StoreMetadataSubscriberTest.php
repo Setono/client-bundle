@@ -10,7 +10,7 @@ use Prophecy\PhpUnit\ProphecyTrait;
 use Setono\Client\Client;
 use Setono\ClientBundle\Context\ClientContextInterface;
 use Setono\ClientBundle\EventSubscriber\StoreMetadataSubscriber;
-use Setono\ClientBundle\MetadataPersister\MetadataPersisterInterface;
+use Setono\ClientBundle\MetadataStore\MetadataStoreInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\FinishRequestEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
@@ -31,17 +31,17 @@ final class StoreMetadataSubscriberTest extends TestCase
     /**
      * @test
      */
-    public function it_persists_the_metadata_of_the_current_client(): void
+    public function it_stores_the_metadata_of_the_current_client(): void
     {
         $client = new Client('client-id');
 
         $clientContext = $this->prophesize(ClientContextInterface::class);
         $clientContext->getClient()->willReturn($client);
 
-        $persister = $this->prophesize(MetadataPersisterInterface::class);
-        $persister->persist($client)->shouldBeCalledOnce();
+        $metadataStore = $this->prophesize(MetadataStoreInterface::class);
+        $metadataStore->store($client)->shouldBeCalledOnce();
 
-        $subscriber = new StoreMetadataSubscriber($clientContext->reveal(), $persister->reveal());
+        $subscriber = new StoreMetadataSubscriber($clientContext->reveal(), $metadataStore->reveal());
         $subscriber->store($this->createFinishRequestEvent(HttpKernelInterface::MAIN_REQUEST));
     }
 
@@ -53,10 +53,10 @@ final class StoreMetadataSubscriberTest extends TestCase
         $clientContext = $this->prophesize(ClientContextInterface::class);
         $clientContext->getClient()->shouldNotBeCalled();
 
-        $persister = $this->prophesize(MetadataPersisterInterface::class);
-        $persister->persist(Argument::cetera())->shouldNotBeCalled();
+        $metadataStore = $this->prophesize(MetadataStoreInterface::class);
+        $metadataStore->store(Argument::cetera())->shouldNotBeCalled();
 
-        $subscriber = new StoreMetadataSubscriber($clientContext->reveal(), $persister->reveal());
+        $subscriber = new StoreMetadataSubscriber($clientContext->reveal(), $metadataStore->reveal());
         $subscriber->store($this->createFinishRequestEvent(HttpKernelInterface::SUB_REQUEST));
     }
 
