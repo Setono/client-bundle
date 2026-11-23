@@ -116,6 +116,22 @@ final class ClientCookieTest extends FunctionalTestCase
     }
 
     /**
+     * PHP url-decodes cookie values, so a cookie holding %FF reaches the application as a byte that isn't UTF-8
+     *
+     * @test
+     */
+    public function it_treats_a_visitor_whose_client_id_is_not_utf8_as_a_new_visitor(): void
+    {
+        $this->setCookie("2.1.1.client-id-\xFF");
+
+        $this->browser->request('GET', '/');
+
+        $clientId = $this->getClientId();
+        self::assertTrue(Uuid::isValid($clientId));
+        self::assertSame($clientId, $this->browser->getResponse()->getContent());
+    }
+
+    /**
      * @test
      */
     public function it_does_not_set_the_cookie_when_a_listener_vetoes_it(): void

@@ -92,6 +92,28 @@ final class RequestBasedCookieProviderTest extends TestCase
     /**
      * @test
      */
+    public function it_returns_null_when_the_client_id_is_not_utf8(): void
+    {
+        $provider = new RequestBasedCookieProvider(new RequestStack(), self::COOKIE_NAME);
+        $request = new Request([], [], [], [self::COOKIE_NAME => (new Cookie("client-id-\xFF"))->toString()]);
+
+        self::assertNull($provider->getCookie($request));
+    }
+
+    /**
+     * @test
+     */
+    public function it_accepts_a_client_id_with_multibyte_characters(): void
+    {
+        $provider = new RequestBasedCookieProvider(new RequestStack(), self::COOKIE_NAME);
+        $request = new Request([], [], [], [self::COOKIE_NAME => (new Cookie('client-id-ø'))->toString()]);
+
+        self::assertSame('client-id-ø', $provider->getCookie($request)?->clientId);
+    }
+
+    /**
+     * @test
+     */
     public function it_prefers_the_given_request_over_the_main_request(): void
     {
         $mainRequest = new Request([], [], [], [self::COOKIE_NAME => (new Cookie('main-id'))->toString()]);
