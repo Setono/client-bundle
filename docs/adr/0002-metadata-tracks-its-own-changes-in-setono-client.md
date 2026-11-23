@@ -1,0 +1,8 @@
+# Metadata tracks its own changes in setono/client
+
+In 2.0, `setono/client`'s `Metadata` knows whether it is changed metadata, through `hasChanged()`, and the bundle stores metadata only when that is true. Each mutator compares its state before and after the call, so setting a key to the value and expiry it already has, or removing a key that doesn't exist, is not a change. Dropping an expired key is a change, so a request that only reads metadata stores it when a key expired. The flag never resets: a request gets new metadata and stores it once. In 1.x, the bundle's `ChangeAwareMetadata` subclass overrode `set()` and `remove()`. It only noticed expired keys because the library's private pruning happened to call the overridable `remove()`, so a new mutator or a direct `unset()` in the library would have silently stopped the bundle from storing changes.
+
+## Considered Options
+
+- **A subclass in the bundle** (1.x): rejected. It depends on private call paths on the far side of the package seam, and metadata that isn't the subclass, e.g. from a custom provider, was stored on every request.
+- **The store compares a snapshot taken at load with one taken at save** (proposed in #23): rejected. It needs no library release and survives any library change, but the store has to keep a snapshot per metadata object, and comparing arrays has traps. MySQL's JSON column reorders keys, so a snapshot of the raw row would differ from the loaded metadata and every read would write. Objects compare by identity. Setono owns `setono/client`, so tracking next to every mutator, covered by the library's own tests, costs one minor release.
